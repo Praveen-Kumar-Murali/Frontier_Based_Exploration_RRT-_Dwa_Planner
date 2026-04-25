@@ -227,7 +227,6 @@ class FrontierExplorer(Node):
             if not self.goal_reached:
                 self.get_logger().info('[EXPLORE] goal reached signal received')
                 self.goal_reached = True
-                self._clear_clusters_and_frontiers()
 
     def _start_cb(self, msg: Bool):
         if msg.data:
@@ -262,7 +261,6 @@ class FrontierExplorer(Node):
                 self.get_logger().info(
                     f'[EXPLORE] goal reached by distance ({dist:.2f}m)')
                 self.goal_reached = True
-                self._clear_clusters_and_frontiers()
 
         if not self.goal_reached:
             return   # still driving to current goal
@@ -608,7 +606,7 @@ class FrontierExplorer(Node):
             pm.color.b         = b_
             pm.color.a         = 1.0
             pm.pose.orientation.w = 1.0
-            pm.lifetime.nanosec = int(2e9)
+            # lifetime = 0 → permanent in RViz
 
             world_pts = [self.svc.map_to_position(p) for p in pts]
             for wp in world_pts:
@@ -637,7 +635,7 @@ class FrontierExplorer(Node):
             tm.color.b         = 1.0
             tm.color.a         = 1.0
             tm.text            = f'C{label}({len(pts)})'
-            tm.lifetime.nanosec = int(2e9)
+            # lifetime = 0 → permanent in RViz
 
             ma.markers.append(pm)
             ma.markers.append(tm)
@@ -663,7 +661,7 @@ class FrontierExplorer(Node):
         sphere.scale.x = 0.2; sphere.scale.y = 0.2; sphere.scale.z = 0.2
         sphere.color.r = 0.0; sphere.color.g = 1.0; sphere.color.b = 0.0
         sphere.color.a = 1.0
-        sphere.lifetime.nanosec = int(5e9)
+        # lifetime = 0 → permanent in RViz
         self.marker_pub.publish(sphere)
 
         txt = Marker()
