@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>All Parameters — Tuning Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: #1a1d2e; border-bottom: 1px solid #2d3748;
+    display: flex; gap: 4px; padding: 10px 20px; overflow-x: auto; flex-wrap: wrap;
+  }
+  nav a {
+    color: #90cdf4; text-decoration: none; font-size: 12px;
+    padding: 5px 12px; border-radius: 20px; white-space: nowrap;
+    border: 1px solid #2d3748; transition: all 0.2s;
+  }
+  nav a:hover { background: #2d3748; color: #fff; }
+
+  section { padding: 80px 32px 50px; max-width: 1300px; margin: 0 auto; }
+  h1 { font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 6px; }
+  h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #2d3748; }
+  h3 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+  p  { line-height: 1.7; color: #cbd5e0; font-size: 14px; margin-bottom: 10px; }
+  code { background: #1a202c; padding: 2px 7px; border-radius: 4px; font-size: 12px; color: #9cdcfe; font-family: monospace; }
+  .sub { color: #718096; font-size: 14px; margin-bottom: 32px; }
+
+  /* ── Parameter card ── */
+  .param-card {
+    background: #1a1d2e; border: 1px solid #2d3748; border-radius: 12px;
+    margin-bottom: 16px; overflow: hidden;
+  }
+  .param-header {
+    display: grid; grid-template-columns: 220px 110px 110px 1fr;
+    gap: 0; align-items: stretch;
+    border-bottom: 1px solid #2d3748;
+  }
+  .param-name {
+    padding: 14px 18px; font-family: monospace; font-size: 14px;
+    font-weight: 700; color: #9cdcfe; background: #141820;
+    border-right: 1px solid #2d3748;
+    display: flex; align-items: center;
+  }
+  .param-current {
+    padding: 14px 14px; text-align: center; border-right: 1px solid #2d3748;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .param-current .label { font-size: 9px; color: #4a5568; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .param-current .value { font-size: 16px; font-weight: 800; font-family: monospace; }
+  .param-current .unit  { font-size: 10px; color: #718096; margin-top: 2px; }
+  .param-range {
+    padding: 14px 14px; text-align: center; border-right: 1px solid #2d3748;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .param-range .label { font-size: 9px; color: #4a5568; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .param-range .value  { font-size: 12px; color: #a0aec0; font-family: monospace; }
+  .param-what {
+    padding: 14px 18px; display: flex; align-items: center;
+    font-size: 13px; color: #e2e8f0; font-weight: 600; line-height: 1.4;
+  }
+
+  .param-body {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+  }
+  .param-col {
+    padding: 16px 18px; border-right: 1px solid #2d3748; font-size: 13px;
+    line-height: 1.6;
+  }
+  .param-col:last-child { border-right: none; }
+  .param-col .col-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 8px; font-weight: 700;
+  }
+
+  .too-low  { background: #2d1515; }
+  .current  { background: #121c12; }
+  .too-high { background: #151510; }
+  .too-low  .col-label  { color: #fc8181; }
+  .current  .col-label  { color: #68d391; }
+  .too-high .col-label  { color: #f6ad55; }
+
+  /* ── Node sections ── */
+  .node-header {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
+    padding: 16px 20px; border-radius: 12px;
+  }
+  .node-header.map  { background: #1a2e22; border: 2px solid #48bb78; }
+  .node-header.rrt  { background: #2a1a08; border: 2px solid #ed8936; }
+  .node-header.dwa  { background: #0f1e36; border: 2px solid #63b3ed; }
+  .node-icon { font-size: 28px; }
+  .node-title { font-size: 18px; font-weight: 800; }
+  .node-desc  { font-size: 13px; opacity: 0.7; }
+
+  .node-header.map .node-title  { color: #9ae6b4; }
+  .node-header.rrt .node-title  { color: #fbd38d; }
+  .node-header.dwa .node-title  { color: #90cdf4; }
+
+  /* ── Danger/impact badges ── */
+  .impact { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-left: 8px; vertical-align: middle; }
+  .impact.high   { background: #742a2a; color: #fc8181; }
+  .impact.medium { background: #744210; color: #f6ad55; }
+  .impact.low    { background: #22543d; color: #9ae6b4; }
+
+  /* ── Slider visualiser ── */
+  .slider-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+  .slider-track { flex: 1; height: 6px; background: #2d3748; border-radius: 3px; position: relative; }
+  .slider-fill  { height: 100%; border-radius: 3px; }
+  .slider-thumb {
+    width: 14px; height: 14px; border-radius: 50%; position: absolute;
+    top: 50%; transform: translate(-50%, -50%);
+    border: 2px solid #fff;
+  }
+  .slider-label { font-size: 10px; color: #4a5568; white-space: nowrap; }
+
+  /* ── Quick ref table ── */
+  .qref { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 20px; }
+  .qref th { background: #1a202c; padding: 10px 12px; text-align: left; color: #90cdf4; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .qref td { padding: 9px 12px; border-bottom: 1px solid #1a202c; vertical-align: top; }
+  .qref tr:nth-child(even) td { background: #141820; }
+  .qref tr:hover td { background: #1a2438; }
+  .qref .param-nm { font-family: monospace; color: #9cdcfe; font-weight: 700; }
+  .qref .val      { font-family: monospace; font-weight: 800; font-size: 13px; }
+  .qref .map-val  { color: #9ae6b4; }
+  .qref .rrt-val  { color: #fbd38d; }
+  .qref .dwa-val  { color: #90cdf4; }
+
+  /* ── highlight box ── */
+  .hbox { border-radius: 10px; padding: 14px 18px; margin: 16px 0; display: flex; gap: 12px; align-items: flex-start; }
+  .hbox.info { background: #1a365d; border: 1px solid #3182ce; }
+  .hbox.warn { background: #3d2008; border: 1px solid #dd6b20; }
+  .hbox.ok   { background: #1a3a2a; border: 1px solid #38a169; }
+  .hbox .ic  { font-size: 20px; flex-shrink: 0; }
+  .hbox .tx  { font-size: 13px; line-height: 1.6; color: #cbd5e0; }
+
+  @media (max-width: 900px) {
+    .param-header { grid-template-columns: 1fr 80px; }
+    .param-current, .param-range { display: none; }
+    .param-body { grid-template-columns: 1fr; }
+    .param-col { border-right: none; border-bottom: 1px solid #2d3748; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#quickref">⚡ Quick Ref</a>
+  <a href="#mapping">🟢 Mapping (6)</a>
+  <a href="#rrt">🟠 RRT* (5)</a>
+  <a href="#dwa-motion">🔵 DWA Motion (5)</a>
+  <a href="#dwa-sampling">🔵 DWA Sampling (4)</a>
+  <a href="#dwa-scoring">🔵 DWA Scoring (3)</a>
+  <a href="#shared">⚙️ Shared (2)</a>
+</nav>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<section style="padding-top:70px;">
+  <h1>All Parameters — Complete Tuning Reference</h1>
+  <p class="sub">Every parameter in phase1_sim.launch.py · What it does · What happens if you change it · Current value highlighted</p>
+
+  <div class="hbox ok">
+    <div class="ic">💡</div>
+    <div class="tx"><strong>How to change any parameter:</strong> Edit <code>phase1_sim.launch.py</code>, change the value, then run:<br>
+    <code>cd ~/ros2_ws && colcon build --packages-select handson_planning && source install/setup.bash</code><br>
+    Then restart the planning stack. You do NOT need to restart the simulator.</div>
+  </div>
+</section>
+
+<!-- ═══════════ QUICK REF TABLE ═══════════ -->
+<section id="quickref">
+  <h2>⚡ Quick Reference — All 25 Parameters at a Glance</h2>
+  <table class="qref">
+    <tr>
+      <th>Parameter</th><th>Current Value</th><th>Node</th><th>One-line effect</th><th>Impact</th>
+    </tr>
+    <!-- Mapping -->
+    <tr><td class="param-nm">grid_size</td>        <td><span class="val map-val">20.0 m</span></td><td>mapping</td><td>Total map coverage area (square)</td><td><span class="impact medium">medium</span></td></tr>
+    <tr><td class="param-nm">grid_resolution</td>  <td><span class="val map-val">0.05 m</span></td><td>mapping</td><td>Cell size — smaller = more detail but heavier computation</td><td><span class="impact high">high</span></td></tr>
+    <tr><td class="param-nm">l_occ</td>            <td><span class="val map-val">0.85</span></td><td>mapping</td><td>How fast walls appear — higher = fewer hits needed</td><td><span class="impact high">high</span></td></tr>
+    <tr><td class="param-nm">l_free</td>           <td><span class="val map-val">0.20</span></td><td>mapping</td><td>How fast free space is confirmed — higher = noisier map</td><td><span class="impact high">high</span></td></tr>
+    <tr><td class="param-nm">lidar_yaw</td>        <td><span class="val map-val">π (3.1416)</span></td><td>mapping</td><td>LiDAR mount angle offset — wrong value = mirrored/rotated map</td><td><span class="impact high">high</span></td></tr>
+    <tr><td class="param-nm">invert_scan_angles</td><td><span class="val map-val">true</span></td><td>mapping</td><td>Stonefish upside-down mount correction — wrong = backwards map</td><td><span class="impact high">high</span></td></tr>
+    <!-- RRT* -->
+    <tr><td class="param-nm">robot_radius</td>     <td><span class="val rrt-val">0.16 m</span></td><td>rrt* + dwa</td><td>C-space inflation size — too small = wall clips, too large = no path</td><td><span class="impact high">high</span></td></tr>
+    <tr><td class="param-nm">rrt_max_iter</td>     <td><span class="val rrt-val">5000</span></td><td>rrt*</td><td>Planning quality — more = better path but slower</td><td><span class="impact medium">medium</span></td></tr>
+    <tr><td class="param-nm">rrt_step_size</td>    <td><span class="val rrt-val">0.3 m</span></td><td>rrt*</td><td>Tree resolution — smaller = smoother path but more nodes</td><td><span class="impact medium">medium</span></td></tr>
+    <tr><td class="param-nm">replan_interval</td>  <td><span class="val rrt-val">2.0 s</span></td><td>rrt*</td><td>How often path is checked for new obstacles</td><td><span class="impact high">high</span></td></tr>
+    <tr><td class="param-nm">waypoint_tol (rrt)</td><td><span class="val rrt-val">0.25 m</span></td><td>rrt*</td><td>Distance to consider a waypoint "reached" in the global planner</td><td><span class="impact medium">medium</span></td></tr>
+    <!-- DWA motion -->
+    <tr><td class="param-nm">v_max</td>            <td><span class="val dwa-val">0.18 m/s</span></td><td>dwa</td><td>Maximum forward speed</td><td><span class="impact high">high</span></td></tr>
+    <tr><td class="param-nm">w_max</td>            <td><span class="val dwa-val">1.2 rad/s</span></td><td>dwa</td><td>Maximum rotation speed</td><td><span class="impact medium">medium</span></td></tr>
+    <tr><td class="param-nm">a_w_max</td>          <td><span class="val dwa-val">1.5 rad/s²</span></td><td>dwa</td><td>Angular acceleration limit (for w window bounds)</td><td><span class="impact low">low</span></td></tr>
+    <tr><td class="param-nm">k_w</td>              <td><span class="val dwa-val">1.5</span></td><td>dwa</td><td>P-gain for Phase A rotation — higher = faster but may overshoot</td><td><span class="impact medium">medium</span></td></tr>
+    <tr><td class="param-nm">angle_threshold</td>  <td><span class="val dwa-val">0.20 rad</span></td><td>dwa</td><td>When to exit rotation phase and start driving</td><td><span class="impact medium">medium</span></td></tr>
+    <!-- DWA sampling -->
+    <tr><td class="param-nm">v_samples</td>        <td><span class="val dwa-val">8</span></td><td>dwa</td><td>How many linear speed levels to evaluate</td><td><span class="impact medium">medium</span></td></tr>
+    <tr><td class="param-nm">w_samples</td>        <td><span class="val dwa-val">21</span></td><td>dwa</td><td>How many angular speed levels to evaluate</td><td><span class="impact medium">medium</span></td></tr>
+    <tr><td class="param-nm">sim_time</td>         <td><span class="val dwa-val">3.0 s</span></td><td>dwa</td><td>How far ahead to simulate each trajectory</td><td><span class="impact high">high</span></td></tr>
+    <tr><td class="param-nm">sim_steps</td>        <td><span class="val dwa-val">20</span></td><td>dwa</td><td>Resolution of trajectory simulation (steps per sim_time)</td><td><span class="impact medium">medium</span></td></tr>
+    <tr><td class="param-nm">waypoint_tol (dwa)</td><td><span class="val dwa-val">0.25 m</span></td><td>dwa</td><td>Distance to advance to next waypoint in DWA</td><td><span class="impact medium">medium</span></td></tr>
+    <!-- DWA scoring -->
+    <tr><td class="param-nm">w_heading</td>        <td><span class="val dwa-val">3.0</span></td><td>dwa</td><td>How much the robot cares about pointing at the waypoint</td><td><span class="impact high">high</span></td></tr>
+    <tr><td class="param-nm">w_clearance</td>      <td><span class="val dwa-val">0.5</span></td><td>dwa</td><td>How much the robot cares about staying away from walls</td><td><span class="impact high">high</span></td></tr>
+    <tr><td class="param-nm">w_velocity</td>       <td><span class="val dwa-val">0.3</span></td><td>dwa</td><td>How much the robot cares about moving fast</td><td><span class="impact medium">medium</span></td></tr>
+    <tr><td class="param-nm">dt</td>               <td><span class="val dwa-val">0.1 s</span></td><td>dwa</td><td>Control loop period (10 Hz)</td><td><span class="impact low">low</span></td></tr>
+  </table>
+</section>
+
+<!-- ═══════════ MAPPING PARAMS ═══════════ -->
+<section id="mapping">
+  <div class="node-header map">
+    <div class="node-icon">🟢</div>
+    <div>
+      <div class="node-title">mapping_node — Occupancy Grid Builder</div>
+      <div class="node-desc">6 parameters · Controls how the LiDAR data is converted into a 2D map</div>
+    </div>
+  </div>
+
+  <!-- l_occ -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">l_occ <span class="impact high">high impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#9ae6b4;">0.85</div>
+        <div class="unit">log-odds / hit</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">0.40 – 1.50</div>
+      </div>
+      <div class="param-what">Log-odds increase added to a cell every time a LiDAR beam endpoint lands on it (confirmed wall hit). Higher = walls appear after fewer hits.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Low (e.g. 0.20)</div>
+        <p>Robot needs 10+ hits before any cell turns black. The map will be almost all grey while moving. RRT* can't plan because it sees no obstacles. Robot drives into walls.</p>
+        <p style="color:#fc8181;">Symptom: map stays grey/empty even after several full rotations.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 0.85</div>
+        <p>3 confirmed hits raises log-odds to 2.55 &gt; 2.0 threshold → cell turns black. Fast enough to detect walls before the robot reaches them at 0.18 m/s.</p>
+        <p style="color:#68d391;">Result: clean map that builds within the first 1–2 rotations of the robot.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too High (e.g. 2.0)</div>
+        <p>Just 1 single LiDAR hit creates a confirmed wall. Sensor noise, reflections from glass, moving people — all become permanent black cells in the map. Phantom obstacles block RRT*.</p>
+        <p style="color:#f6ad55;">Symptom: scattered black dots appearing all over open space.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- l_free -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">l_free <span class="impact high">high impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#9ae6b4;">0.20</div>
+        <div class="unit">log-odds / free ray</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">0.10 – 0.35</div>
+      </div>
+      <div class="param-what">Log-odds decrease subtracted from cells a free beam passes through. Higher = free space is confirmed faster but can erase walls. This is the #1 parameter that caused your double-wall bug.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Low (e.g. 0.05)</div>
+        <p>Free rays barely affect log-odds. Cells are confirmed free very slowly. Open corridors appear as unknown (grey) for a long time. RRT* routes through grey = unknown space which it treats as passable — fine but risky near actual walls.</p>
+        <p style="color:#fc8181;">Symptom: corridors stay grey even after robot drives through them many times.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 0.20</div>
+        <p>3 free rays confirm a cell as free (−0.60 &lt; −0.5 threshold). Gentle enough not to punch through confirmed walls. Aggressive enough to open corridors within one pass.</p>
+        <p style="color:#68d391;">Reduced from 0.40 — that was punching through walls creating noise/double walls on the far side.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too High (e.g. 0.50)</div>
+        <p>Free rays aggressively erase walls even with the sticky wall protection (because some walls haven't yet hit the &gt;2.0 threshold). Creates "double wall" artifact — walls appear on both sides of the real wall. This was the original bug in this project.</p>
+        <p style="color:#f6ad55;">Symptom: thick doubled black walls, noise inside rooms, corrupted map.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- grid_resolution -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">grid_resolution <span class="impact high">high impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#9ae6b4;">0.05</div>
+        <div class="unit">m / cell</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">0.02 – 0.20</div>
+      </div>
+      <div class="param-what">Physical size of each grid cell. 0.05m = 5cm per cell. Determines map precision AND memory usage. At 20m map size, this gives 400×400 = 160,000 cells.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Fine (e.g. 0.02m)</div>
+        <p>1000×1000 = 1,000,000 cells. map_cb processing, Bresenham tracing, and RRT* inflation all become 6× slower. May cause the system to lag behind real-time, losing scan data. Also requires matching change in robot_radius (measured in cells).</p>
+        <p style="color:#fc8181;">Symptom: map update rate drops, RRT* takes 10+ seconds.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 0.05m (5cm)</div>
+        <p>400×400 = 160,000 cells. TurtleBot4 body is ~0.17m wide = ~3.4 cells. Enough resolution to distinguish narrow corridors. Runs in real-time at 10Hz map updates.</p>
+        <p style="color:#68d391;">Good balance between detail and computation speed for a 20m×20m environment.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too Coarse (e.g. 0.20m)</div>
+        <p>100×100 = 10,000 cells — very fast. But 20cm cells can't represent narrow doorways. The robot's 0.16m body only spans 1 cell — inflation becomes ineffective. RRT* may find paths that clip through actual walls.</p>
+        <p style="color:#f6ad55;">Symptom: paths through doors and corners clip walls, robot gets stuck.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- grid_size -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">grid_size <span class="impact medium">medium impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#9ae6b4;">20.0</div>
+        <div class="unit">metres (square)</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">10.0 – 40.0</div>
+      </div>
+      <div class="param-what">Total map coverage. The map is a square centred at the robot's starting position. 20m = the robot can see 10m in any direction. Must be larger than the environment.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Small (e.g. 10m)</div>
+        <p>If the environment or goal is more than 5m from the start, the goal or part of the circuit will be off-map. LiDAR beams reaching beyond the map boundary are simply discarded. RRT* goal will be out of bounds.</p>
+        <p style="color:#fc8181;">Symptom: black map boundary visible, goal out-of-bounds error.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 20m</div>
+        <p>The HOI circuit is approximately 8m × 6m. 20m gives comfortable margin on all sides. The origin (-10, -10) means the map extends from -10m to +10m in both X and Y.</p>
+        <p style="color:#68d391;">No part of the circuit can fall outside this boundary at any robot start position.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too Large (e.g. 40m)</div>
+        <p>800×800 = 640,000 cells (4× more). Slower map processing, slower RRT* inflation, more memory. No benefit since the environment is only 8×6m — most of the map stays grey forever.</p>
+        <p style="color:#f6ad55;">Symptom: no visible error, but system becomes slower.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- lidar_yaw -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">lidar_yaw <span class="impact high">high impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#9ae6b4;">π</div>
+        <div class="unit">3.1416 rad</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Range</div>
+        <div class="value">0 – 2π</div>
+      </div>
+      <div class="param-what">The angular offset between the LiDAR mounting direction and the robot's forward axis. π = LiDAR faces backwards (180°). Used to compute absolute beam direction: beam_world = robot_heading + lidar_yaw ± scan_angle.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Wrong (e.g. 0.0)</div>
+        <p>All beams rotated 180°. LiDAR appears to face forward when it faces backward. Every wall appears on the opposite side of where it really is. Map is a mirror image of reality. Robot drives toward open space it thinks is blocked.</p>
+        <p style="color:#fc8181;">Symptom: walls appear in completely wrong positions, map looks like a mirror.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: π rad (180°)</div>
+        <p>The Stonefish simulator mounts the RPLidar with a 180° yaw offset. Together with invert_scan_angles=True, this correctly maps all beams to their real-world directions. Do not change this for Stonefish.</p>
+        <p style="color:#68d391;">Change this only when deploying on a real robot with a different LiDAR mount angle.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Wrong (e.g. π/2)</div>
+        <p>All beams rotated 90°. Walls appear rotated relative to reality. The map will still look reasonable (circuit shape visible) but rotated — every wall is in the wrong place. Robot navigates into real walls it doesn't see as walls.</p>
+        <p style="color:#f6ad55;">Symptom: map is geometrically correct shape but rotated 90°.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- invert_scan_angles -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">invert_scan_angles <span class="impact high">high impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#9ae6b4;">true</div>
+        <div class="unit">boolean</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Range</div>
+        <div class="value">true / false</div>
+      </div>
+      <div class="param-what">Controls beam angle direction. true: beam = l_yaw − scan_angle (Stonefish upside-down mount). false: beam = l_yaw + scan_angle (real robot normal mount). Getting this wrong creates a mirrored map.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Set to false (wrong for Stonefish)</div>
+        <p>All beam angles mirrored. Right wall appears on the left and vice versa. The robot's odometry is correct but the map is a horizontal mirror image of the real circuit. Robot thinks it's navigating correctly but is actually heading toward real walls it sees as open space.</p>
+        <p style="color:#fc8181;">Symptom: map is mirror image — right wall and left wall swapped.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: true</div>
+        <p>Correct for Stonefish simulator where the RPLidar is mounted with roll=180°. Combined with lidar_yaw=π this produces a correctly-oriented map that matches the physical circuit.</p>
+        <p style="color:#68d391;">Never change for Stonefish. Change to false only for real TurtleBot4.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ N/A (binary parameter)</div>
+        <p>There is no "too high" — this is a boolean. Either the map is correct (true for Stonefish) or mirrored (false for Stonefish). If you're deploying on a real robot, you switch this to false and verify the map orientation against a known environment.</p>
+        <p style="color:#718096;">Verification method: stand at the north wall and check that the map shows a wall to the north.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ RRT* PARAMS ═══════════ -->
+<section id="rrt">
+  <div class="node-header rrt">
+    <div class="node-icon">🟠</div>
+    <div>
+      <div class="node-title">global_planner — RRT* Path Planner</div>
+      <div class="node-desc">5 parameters · Controls path planning quality, speed, and safety</div>
+    </div>
+  </div>
+
+  <!-- robot_radius (shared) -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">robot_radius <span class="impact high">high impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#fbd38d;">0.16</div>
+        <div class="unit">metres</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">0.12 – 0.20</div>
+      </div>
+      <div class="param-what">Used in BOTH global_planner (C-space inflation before RRT*) and dwa_planner (collision check inflation). Set to same value in both nodes via ROBOT_RADIUS constant. TurtleBot4 physical body ≈ 0.17m diameter.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Small (e.g. 0.08m)</div>
+        <p>RRT* finds paths that are physically too close to walls. The robot's body physically clips corners and walls while following the path. In simulation: robot teleports through walls. On real robot: physical collision.</p>
+        <p style="color:#fc8181;">Symptom: robot drives right next to walls and corners, clips obstacles.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 0.16m</div>
+        <p>Slightly less than the physical body radius (0.17m) to allow the robot to pass through narrow corridors in the HOI circuit. Previously 0.17m but that prevented paths through tight corners. 0.16m gives 1mm of margin which is enough for simulation.</p>
+        <p style="color:#68d391;">Goldilocks value for the HOI circuit — large enough for safety, small enough to allow passage.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too Large (e.g. 0.25m)</div>
+        <p>After inflation, narrow corridors (e.g. 0.5m wide) become completely blocked: 0.25m × 2 sides = 0.50m of inflated wall = no free space left. RRT* fails entirely — "no free cell near start" error. Robot can't plan any path through the circuit.</p>
+        <p style="color:#f6ad55;">Symptom: RRT* returns no path, "[PLAN] Start in obstacle!" error in terminal.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- rrt_max_iter -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">rrt_max_iter <span class="impact medium">medium impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#fbd38d;">5000</div>
+        <div class="unit">iterations</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">1000 – 15000</div>
+      </div>
+      <div class="param-what">Maximum number of random samples RRT* will try before giving up. More iterations = closer to optimal path and higher probability of finding a path in complex environments. Each iteration adds one node to the tree.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Low (e.g. 500)</div>
+        <p>Tree may not reach the goal. You'll see "[RRT*] ❌ no path after 500 iters" frequently. Robot retries 3 times then gives up. Also: the path found (if any) will be highly suboptimal — many unnecessary detours adding distance.</p>
+        <p style="color:#fc8181;">Symptom: frequent planning failures, very jagged/long paths when planning succeeds.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 5000</div>
+        <p>Reliable path finding for the HOI circuit (simple rectangular layout). Runs in approximately 0.5–1.5 seconds on the lab machine. The path is near-optimal — rewiring has had enough iterations to find good parent connections.</p>
+        <p style="color:#68d391;">Increase to 8000–10000 for more complex environments or when paths look very jagged.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too High (e.g. 20000)</div>
+        <p>Planning takes 3–5 seconds. During replanning, the robot is executing a potentially-blocked old path for 3–5 seconds before the new plan arrives. In a fast-changing environment this is dangerous. Also: marginal quality improvement after 5000 in a simple circuit.</p>
+        <p style="color:#f6ad55;">Symptom: long delay between goal click and robot starting to move.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- rrt_step_size -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">rrt_step_size <span class="impact medium">medium impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#fbd38d;">0.3</div>
+        <div class="unit">metres</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">0.1 – 0.8</div>
+      </div>
+      <div class="param-what">Maximum distance the tree extends toward each random sample. Controls the "resolution" of the tree — how closely-spaced the waypoints are. Also acts as the goal connection threshold: if any node gets within step_size of the goal, planning succeeds.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Small (e.g. 0.05m)</div>
+        <p>Many small steps needed to cross the map. Tree has thousands of nodes but only covers a small radius. 5000 iterations may not reach a goal 5m away (5m / 0.05m step = 100 steps minimum, but random sampling makes it much more). Very smooth paths but likely planning failure.</p>
+        <p style="color:#fc8181;">Symptom: RRT* tree visible as a dense cloud near start, rarely reaching goal.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 0.3m</div>
+        <p>Good balance. Tree covers the full 8m circuit in ~27 steps minimum. Produces paths with waypoints ~0.3m apart — dense enough for smooth following but not too many for DWA to process. With 5000 iterations, reliably reaches goals across the full circuit.</p>
+        <p style="color:#68d391;">Visible as the spacing between red dots on the /plan path in RViz.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too Large (e.g. 1.0m)</div>
+        <p>Tree reaches the goal quickly (few iterations needed) but creates very coarse paths — waypoints 1m apart. Path may clip corners when jumping over narrow gaps. The collision check between waypoints (_path_free with n=15 samples) may miss a thin wall between two 1m-spaced nodes.</p>
+        <p style="color:#f6ad55;">Symptom: path looks like a polygon with very few vertices, corner-cutting near walls.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- replan_interval -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">replan_interval <span class="impact high">high impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#fbd38d;">2.0</div>
+        <div class="unit">seconds</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">1.0 – 10.0</div>
+      </div>
+      <div class="param-what">How often the replanning timer fires to check if the current path is still safe. Every replan_interval seconds, the next 2 waypoints ahead are checked against the latest map. If blocked, RRT* is triggered.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Fast (e.g. 0.3s)</div>
+        <p>Replan check fires 3× per second. Because the map is still building and new walls appear constantly, the check will almost always find something "blocked" — triggering an infinite cascade of replanning. This was the original bug. Robot stops moving entirely due to constant replanning.</p>
+        <p style="color:#fc8181;">Symptom: terminal flooded with "🚧 next wp blocked — replanning!", robot never moves.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 2.0s</div>
+        <p>Gives RRT* time to finish computing before the next check fires (~1.5s typical planning time). Map has time to stabilise after new wall areas are discovered. Avoids cascade replanning while still detecting genuine path blockages within 2 seconds.</p>
+        <p style="color:#68d391;">Was 0.5s — changed to 2.0s to fix the infinite replan loop.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too Slow (e.g. 10s)</div>
+        <p>If a new wall appears blocking the path, the robot will drive toward it for up to 10 seconds before the replanner detects it. DWA will handle small deviations, but if the wall completely blocks the corridor, DWA enters recovery and spams /replan_request anyway — bypassing the timer.</p>
+        <p style="color:#f6ad55;">Symptom: robot drives toward newly-discovered walls for many seconds before recovering.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- waypoint_tol (rrt) -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">waypoint_tol (rrt*) <span class="impact medium">medium impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#fbd38d;">0.25</div>
+        <div class="unit">metres</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">0.15 – 0.50</div>
+      </div>
+      <div class="param-what">In global_planner._odom_cb: when the robot is within this distance of the next waypoint, path_index advances. This prevents the replanner from checking already-traversed segments. Separate from DWA's waypoint_tol which controls when DWA advances.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Small (e.g. 0.05m)</div>
+        <p>Path index advances only when robot is very close (5cm) to waypoint. If the robot navigates smoothly past a waypoint by 10cm, the index never advances. Replanner keeps checking the waypoint the robot already passed — it may now be blocked by a newly-mapped wall → spurious replan triggered.</p>
+        <p style="color:#fc8181;">Symptom: replanning triggered right after passing a waypoint.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 0.25m</div>
+        <p>Matches DWA's waypoint_tol exactly. When DWA considers a waypoint reached, the global planner's index also advances at the same moment. They stay in sync, preventing the replanner from ever checking behind the robot.</p>
+        <p style="color:#68d391;">Keep this value equal to DWA's waypoint_tol to maintain synchronisation between the two nodes.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too Large (e.g. 1.0m)</div>
+        <p>Path index advances 1m before reaching the waypoint. The robot may skip waypoints it hasn't navigated around yet — DWA tries to go to waypoint 3 while the robot is still near waypoint 1. Causes the robot to take diagonal shortcuts that cut through walls.</p>
+        <p style="color:#f6ad55;">Symptom: robot cuts corners, tries to take a straight-line shortcut through walls.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ DWA MOTION PARAMS ═══════════ -->
+<section id="dwa-motion">
+  <div class="node-header dwa">
+    <div class="node-icon">🔵</div>
+    <div>
+      <div class="node-title">dwa_planner — Motion Limits</div>
+      <div class="node-desc">5 parameters · Controls how fast and how aggressively the robot moves</div>
+    </div>
+  </div>
+
+  <!-- v_max -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">v_max <span class="impact high">high impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#90cdf4;">0.18</div>
+        <div class="unit">m/s</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">0.05 – 0.30</div>
+      </div>
+      <div class="param-what">Maximum forward speed the robot is allowed to travel. The DWA velocity sampling always covers the full range 0 → v_max. TurtleBot4 hardware maximum is ~0.31 m/s but the simulator is stable up to ~0.25 m/s.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Slow (e.g. 0.05 m/s)</div>
+        <p>Robot moves very slowly. Navigation across a 5m circuit takes 100+ seconds. The map builds slowly because the robot explores slowly. Demo looks unimpressive. However, the system is MORE stable and DWA collision avoidance is more reliable at low speeds.</p>
+        <p style="color:#fc8181;">Use case: narrow environments or when map quality is poor.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 0.18 m/s</div>
+        <p>Reasonable demo speed — crosses the circuit in ~25–40 seconds. Slow enough that DWA's 3-second lookahead gives plenty of warning about obstacles. Fast enough that the demo is visually engaging during a presentation.</p>
+        <p style="color:#68d391;">About 60% of TurtleBot4's hardware maximum. Good margin for safety.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too Fast (e.g. 0.28 m/s)</div>
+        <p>Robot moves fast and looks impressive but DWA's obstacle reaction time shrinks. At 0.28 m/s, 3s lookahead covers 0.84m — barely enough clearance in tight corners. The robot may overshoot waypoints and require repeated Phase A rotations to correct heading.</p>
+        <p style="color:#f6ad55;">Symptom: robot oscillates at corners, overshoots waypoints, more frequent replanning.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- w_max -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">w_max <span class="impact medium">medium impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#90cdf4;">1.2</div>
+        <div class="unit">rad/s</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">0.5 – 2.0</div>
+      </div>
+      <div class="param-what">Maximum angular (turning) speed. Limits how sharply the robot can turn in Phase A (rotation) and how curved DWA trajectories can be. TurtleBot4 hardware maximum is ~1.9 rad/s.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Slow (e.g. 0.3 rad/s)</div>
+        <p>Phase A rotations take a very long time. To rotate 180° (π rad) at 0.3 rad/s takes 10+ seconds. DWA trajectories can barely curve — the robot can only make very gentle turns. Cannot navigate tight corners without stopping and doing very slow rotations.</p>
+        <p style="color:#fc8181;">Symptom: robot takes very long to turn at each waypoint, demo looks painfully slow.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 1.2 rad/s</div>
+        <p>180° turn takes ~2.6 seconds. Smooth and fast enough for demo. DWA can generate arcs with turning radius as tight as v/w = 0.18/1.2 = 0.15m — just enough to navigate the HOI circuit corners without stopping.</p>
+        <p style="color:#68d391;">About 63% of hardware maximum — comfortable safety margin.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too Fast (e.g. 2.0 rad/s)</div>
+        <p>Robot spins very fast during Phase A. May overshoot the target heading due to odometry latency (wheel slip at high angular speed causes pose estimate errors). The robot oscillates left-right trying to align to the waypoint bearing before settling.</p>
+        <p style="color:#f6ad55;">Symptom: robot "jitters" left-right when rotating toward each new waypoint.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- k_w -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">k_w <span class="impact medium">medium impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#90cdf4;">1.5</div>
+        <div class="unit">gain (rad/s per rad)</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">0.8 – 3.0</div>
+      </div>
+      <div class="param-what">Proportional gain for Phase A rotation controller. Angular velocity = k_w × angle_error. At 1 radian error, the robot spins at 1.5 rad/s. This is then clamped to ±w_max. Controls how "aggressively" the robot corrects its heading.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Low (e.g. 0.3)</div>
+        <p>Even at large angle errors, rotation is slow. At 1 radian error → only 0.3 rad/s spin. 180° turn takes 17 seconds. The robot barely rotates toward waypoints. Phase A takes forever — robot appears stuck before every waypoint.</p>
+        <p style="color:#fc8181;">Symptom: robot rotates very slowly, almost unnoticeable heading correction.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 1.5</div>
+        <p>At 1 radian error → spins at 1.5 rad/s (= w_max). Proportionally slower as error decreases — smooth deceleration into alignment. At 0.20 rad (angle_threshold) → 0.3 rad/s, barely spinning → smooth transition to Phase B driving.</p>
+        <p style="color:#68d391;">Creates natural "proportional slow-down" as the robot aligns — avoids abrupt start/stop of rotation.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too High (e.g. 4.0)</div>
+        <p>At small angle errors, commands large angular velocities. Near the angle_threshold (0.20 rad), k_w=4.0 commands 0.80 rad/s which is still fast — no smooth deceleration. Robot oscillates around the target heading: overshoots, corrects, overshoots again.</p>
+        <p style="color:#f6ad55;">Symptom: robot oscillates left-right at end of rotation phase, takes long to settle.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- angle_threshold -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">angle_threshold <span class="impact medium">medium impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#90cdf4;">0.20</div>
+        <div class="unit">radians (~11.5°)</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">0.05 – 0.50</div>
+      </div>
+      <div class="param-what">The heading error below which the robot exits Phase A (rotation) and enters Phase B (DWA forward drive). Acts as a gate: "close enough to target heading → start moving." Too strict = robot keeps rotating. Too loose = robot drives off at an angle.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Strict (e.g. 0.02 rad = 1°)</div>
+        <p>Robot must align to within 1° before moving forward. Due to odometry noise and oscillations, it may never quite settle below 1° — infinite rotation. Even when it finally settles, a slight bump or sensor noise puts it back above 1°, stopping forward motion again mid-corridor.</p>
+        <p style="color:#fc8181;">Symptom: robot spins indefinitely and never starts driving forward.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 0.20 rad (≈11.5°)</div>
+        <p>Robot starts moving when roughly aligned within 11.5°. DWA's heading score then corrects the remaining angular error while driving — no need for perfect pre-alignment. Wide enough to account for odometry noise but tight enough that the robot doesn't drive sideways.</p>
+        <p style="color:#68d391;">DWA handles the final alignment correction while driving forward — more efficient than perfect rotation.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too Loose (e.g. 0.8 rad = 46°)</div>
+        <p>Robot starts forward motion when still 46° off-target. DWA's heading score tries to correct this while driving, but at 46° error, the robot's heading score is low enough that DWA may choose a trajectory that curves back and re-enters Phase A, causing repeated stop-rotate-drive cycles.</p>
+        <p style="color:#f6ad55;">Symptom: robot starts driving sideways, curves back, rotates again — zigzag pattern.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ DWA SAMPLING PARAMS ═══════════ -->
+<section id="dwa-sampling">
+  <div class="node-header dwa">
+    <div class="node-icon">🔵</div>
+    <div>
+      <div class="node-title">dwa_planner — Trajectory Sampling</div>
+      <div class="node-desc">4 parameters · Controls how DWA explores velocity space</div>
+    </div>
+  </div>
+
+  <!-- sim_time -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">sim_time <span class="impact high">high impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#90cdf4;">3.0</div>
+        <div class="unit">seconds</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">0.5 – 4.0</div>
+      </div>
+      <div class="param-what">How far ahead each DWA trajectory is simulated. Longer = more foresight (robot avoids obstacles further away) AND longer visible arcs in RViz. Also means the robot "plans" into areas it may not yet have mapped.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Short (e.g. 0.3s)</div>
+        <p>At 0.18 m/s, the trajectory only looks 5.4cm ahead. By the time the robot detects an obstacle is "ahead", it's already within 5cm of it — too late to avoid smoothly. Robot will frequently enter recovery Phase C. Also: trajectories invisible in RViz (too short to see).</p>
+        <p style="color:#fc8181;">Symptom: frequent recovery events, robot jerks near walls, trajectories invisible in RViz.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 3.0s</div>
+        <p>At 0.18 m/s, looks ~54cm ahead — about 3 robot-lengths. Gives DWA plenty of warning before reaching a wall. Long enough to see the curved arcs clearly in RViz. Increased from 0.8s specifically to make the DWA visualization visible in this demo.</p>
+        <p style="color:#68d391;">Visible as the length of the cyan /local_path and green best-trajectory arcs in RViz.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too Long (e.g. 5.0s)</div>
+        <p>Simulates 90cm ahead. The trajectory extends into areas the robot hasn't mapped yet (grey cells). Since unknown cells are treated as free for DWA, the trajectory may project into an unmapped wall that will appear shortly — then get blocked suddenly. Also: more computation per cycle (more steps).</p>
+        <p style="color:#f6ad55;">Symptom: DWA picks trajectories into unmapped areas and then suddenly gets blocked when map updates.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- sim_steps -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">sim_steps <span class="impact medium">medium impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#90cdf4;">20</div>
+        <div class="unit">steps (per trajectory)</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">8 – 40</div>
+      </div>
+      <div class="param-what">Number of integration steps within sim_time. Each step = sim_time / sim_steps = 3.0/20 = 0.15s. More steps = more collision check points along each trajectory = finer detection of thin obstacles. Total computation = v_samples × w_samples × sim_steps = 8 × 21 × 20 = 3360 point checks per cycle.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Few (e.g. 3)</div>
+        <p>Step size = 3.0/3 = 1.0s per step. DWA checks collision only at 3 points along a 54cm trajectory. A thin wall (0.05m = 1 cell) between two sample points would be completely missed — trajectory appears free but robot hits the wall.</p>
+        <p style="color:#fc8181;">Symptom: robot drives through thin walls that DWA failed to detect.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 20 steps</div>
+        <p>Step size = 3.0/20 = 0.15s = 0.027m at full speed. Collision checks every 2.7cm — much smaller than any wall cell (5cm). Cannot miss any obstacle in the map. Total: 3360 grid lookups per 100ms control cycle — well within real-time budget.</p>
+        <p style="color:#68d391;">Scaled from 8 steps when sim_time was increased from 0.8s to 3.0s to maintain the same per-step distance.</div>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too Many (e.g. 100)</div>
+        <p>16,800 grid lookups per cycle. At 10Hz this is 168,000 lookups/second. Python's speed limit may push the control loop beyond 100ms — the cycle runs slower than 10Hz. Robot gets jerky control commands. No accuracy benefit beyond ~20 steps for a 5cm cell size.</p>
+        <p style="color:#f6ad55;">Symptom: control loop runs at 5–6Hz instead of 10Hz, jerky motion.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- v_samples & w_samples -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">v_samples / w_samples <span class="impact medium">medium impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#90cdf4;">8 / 21</div>
+        <div class="unit">candidates each</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">4–20 / 9–41</div>
+      </div>
+      <div class="param-what">Grid resolution of velocity sampling. v_samples=8 means DWA evaluates 8 linear speeds (0, 0.026, 0.051, ... 0.18 m/s). w_samples=21 means 21 angular speeds (−1.2 to +1.2 rad/s). Total candidates = 8 × 21 = 168. The "fan" width in RViz depends on w_samples.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Few (e.g. 3v × 5w = 15)</div>
+        <p>Only 15 trajectories evaluated. May miss the optimal avoidance arc entirely — the best velocity pair falls between the coarse sample points. Robot may fail to find a good path around a corner even when one clearly exists.</p>
+        <p style="color:#fc8181;">Symptom: robot enters recovery mode unnecessarily, fails to navigate smooth curves.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current: 8v × 21w = 168</div>
+        <p>Good coverage. w_samples=21 with step = 2.4/20 = 0.12 rad/s between angular speeds — fine enough to distinguish meaningful trajectory differences. The fan in RViz looks dense and covers the full turning range. Computes in ~5ms per cycle in Python.</p>
+        <p style="color:#68d391;">w_samples should be odd (21) so one trajectory always has w=0 (straight ahead) for comparison.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too Many (e.g. 20v × 51w = 1020)</div>
+        <p>1020 trajectories × 20 steps = 20,400 collision checks per cycle. Python overhead pushes the loop beyond 100ms. Also: the score function has vanishingly small differences between adjacent samples — no practical benefit. Very dense fan in RViz but visually cluttered.</p>
+        <p style="color:#f6ad55;">Symptom: control loop slows below 10Hz, extremely dense fan in RViz but no better avoidance.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ DWA SCORING PARAMS ═══════════ -->
+<section id="dwa-scoring">
+  <div class="node-header dwa">
+    <div class="node-icon">🔵</div>
+    <div>
+      <div class="node-title">dwa_planner — Trajectory Scoring Weights</div>
+      <div class="node-desc">3 parameters · The most interesting to tune — directly controls robot "personality"</div>
+    </div>
+  </div>
+
+  <div class="hbox info">
+    <div class="ic">📊</div>
+    <div class="tx">These three weights form the DWA scoring formula: <code>score = w_heading × heading_score + w_clearance × clearance_score + w_velocity × velocity_score</code>. Each sub-score is normalised to [0, 1]. Only the <strong>ratio</strong> between the weights matters, not their absolute values — doubling all three has no effect.</div>
+  </div>
+
+  <!-- w_heading -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">w_heading <span class="impact high">high impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#90cdf4;">3.0</div>
+        <div class="unit">weight</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Ratio</div>
+        <div class="value">3.0 : 0.5 : 0.3</div>
+      </div>
+      <div class="param-what">How much DWA prioritises trajectories whose endpoints point toward the current waypoint. High value = robot strongly prefers going in the right direction, even if it means getting closer to a wall. This is the dominant weight — 6× larger than clearance.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Low (e.g. 0.5, equal to clearance)</div>
+        <p>Robot treats "heading toward goal" and "staying away from walls" as equally important. In a narrow corridor, clearance pulls the robot toward the center while heading pulls it toward the corner — the robot circles endlessly trying to balance both. Never makes progress toward the goal.</p>
+        <p style="color:#fc8181;">Symptom: robot drifts sideways in corridors, circles around waypoints, very slow progress.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 3.0</div>
+        <p>Heading is 6× more important than clearance and 10× more important than velocity. Robot will confidently drive toward waypoints and accept being moderately close to walls. Near a wall on one side, the trajectory only bends if the heading benefit of bending outweighs the clearance cost.</p>
+        <p style="color:#68d391;">This ratio ensures the robot actually makes progress toward goals instead of hovering in the middle of corridors.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too High (e.g. 10.0)</div>
+        <p>Robot is so obsessed with heading toward the goal that it ignores walls. Will choose a straight trajectory into a wall if it heads toward the goal — overriding the clearance score completely. Essentially becomes a pure P-controller with no obstacle avoidance.</p>
+        <p style="color:#f6ad55;">Symptom: robot drives straight into walls "because the goal is that way", no avoidance arc.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- w_clearance -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">w_clearance <span class="impact high">high impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#90cdf4;">0.5</div>
+        <div class="unit">weight</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Ratio</div>
+        <div class="value">3.0 : 0.5 : 0.3</div>
+      </div>
+      <div class="param-what">How much DWA penalises trajectories that pass close to walls. The clearance score = min(nearest_wall_distance / 0.6m, 1.0). High clearance weight = robot hugs the center of corridors. This is what creates the visible "bend away from wall" behavior in RViz.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Low (e.g. 0.05)</div>
+        <p>Robot ignores wall proximity almost entirely. Drives very close to walls. In simulation this is mostly fine, but on a real robot the physical body would frequently graze walls. Also: the visible bending effect in the DWA trajectory fan disappears — all arcs look similar.</p>
+        <p style="color:#fc8181;">Symptom: robot grazes walls, no visible clearance-based arc in RViz.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 0.5</div>
+        <p>Provides meaningful avoidance bias when near walls without overriding heading. When a wall is within 0.3m on one side, the clearance score difference between "turning toward wall" and "turning away" is 0.5 × 0.5 = 0.25 — enough to prefer the safer trajectory.</p>
+        <p style="color:#68d391;">This is where you see the DWA arc bend in RViz near corners — this weight creates that visual.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too High (e.g. 3.0, equal to heading)</div>
+        <p>Robot is as interested in staying away from walls as in reaching its goal. In any corridor, the robot will drift away from all walls — hugging the exact center. Looks nice but in a corridor where the goal is past a corner, the robot may refuse to approach the corner to turn — the wall proximity overwhelms the heading score.</p>
+        <p style="color:#f6ad55;">Symptom: robot hugs corridor center obsessively, refuses to enter narrow sections, slow progress.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- w_velocity -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">w_velocity <span class="impact medium">medium impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#90cdf4;">0.3</div>
+        <div class="unit">weight</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Ratio</div>
+        <div class="value">3.0 : 0.5 : 0.3</div>
+      </div>
+      <div class="param-what">How much DWA prefers faster trajectories (more forward progress). Velocity score = distance_travelled / max_possible_distance. Without this weight, the robot might choose a slow curving trajectory over a fast straight one even when both have similar heading and clearance scores.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Low (e.g. 0.0 — disabled)</div>
+        <p>DWA doesn't care about speed. If a v=0.01 m/s trajectory has marginally better heading or clearance score than a v=0.18 m/s trajectory, the slow one wins. Robot crawls forward making very slow progress. Paradoxically also makes recovery harder (barely moves away from stuck situation).</p>
+        <p style="color:#fc8181;">Symptom: robot drives extremely slowly even in wide open corridors.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 0.3</div>
+        <p>Breaks ties in favour of faster trajectories. When two paths have similar heading and clearance, the faster one wins. Prevents the robot from crawling unnecessarily. At 0.3 vs heading's 3.0, speed is a tiebreaker not a primary driver — the robot won't risk safety for speed.</p>
+        <p style="color:#68d391;">Think of it as "all else being equal, prefer the faster path" — a sensible default.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too High (e.g. 3.0, equal to heading)</div>
+        <p>Robot always prefers the fastest trajectory regardless of obstacle proximity. Near walls, DWA will choose v=0.18 m/s straight ahead even if a v=0.10 m/s arcing trajectory would safely avoid the upcoming wall. Overrides clearance-based avoidance near obstacles.</p>
+        <p style="color:#f6ad55;">Symptom: robot drives fast everywhere, no clearance-based slowing near walls, clips obstacles.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SHARED ═══════════ -->
+<section id="shared">
+  <h2>⚙️ Shared Parameters</h2>
+
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">waypoint_tol (dwa) <span class="impact medium">medium impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#90cdf4;">0.25</div>
+        <div class="unit">metres</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">0.15 – 0.50</div>
+      </div>
+      <div class="param-what">In dwa_planner: when robot is within this distance of the current waypoint, wp_idx advances to the next waypoint. Also used as the final goal reached check. Keep this equal to global_planner's waypoint_tol to keep both nodes in sync.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Small (e.g. 0.05m)</div>
+        <p>Robot must get very close (5cm) to each waypoint before advancing. At 0.18 m/s, the robot may pass the waypoint and overshoot — then need to turn back. Creates back-and-forth oscillation at each waypoint. Very slow progress.</p>
+        <p style="color:#fc8181;">Symptom: robot stops and oscillates at each waypoint instead of smoothly passing through.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 0.25m</div>
+        <p>Robot smoothly advances past each waypoint when within 25cm. At 0.18 m/s this is about 1.4 seconds of travel. Smooth enough that the robot barely slows down at each waypoint — it just "passes through" the waypoint zone and continues toward the next one.</p>
+        <p style="color:#68d391;">Must match global_planner's waypoint_tol (also 0.25m) — they should be identical.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too Large (e.g. 1.0m)</div>
+        <p>Waypoint considered "reached" from 1m away. DWA skips to the next waypoint before actually reaching the current one. For waypoints around corners, this means the robot turns toward the next waypoint too early — cutting the corner and potentially driving through a wall.</p>
+        <p style="color:#f6ad55;">Symptom: robot cuts corners, skips waypoints, clips walls at turns.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- dt -->
+  <div class="param-card">
+    <div class="param-header">
+      <div class="param-name">dt <span class="impact low">low impact</span></div>
+      <div class="param-current">
+        <div class="label">Current</div>
+        <div class="value" style="color:#90cdf4;">0.1</div>
+        <div class="unit">seconds (10 Hz)</div>
+      </div>
+      <div class="param-range">
+        <div class="label">Safe Range</div>
+        <div class="value">0.05 – 0.20</div>
+      </div>
+      <div class="param-what">Control loop period. DWA runs every dt seconds. This sets how frequently a new cmd_vel is published to the robot. Lower dt = higher frequency control = smoother motion but more computation. The ROS timer fires at 1/dt Hz.</div>
+    </div>
+    <div class="param-body">
+      <div class="param-col too-low">
+        <div class="col-label">⬇ Too Fast (e.g. 0.02s = 50Hz)</div>
+        <p>DWA runs 50 times per second. Each cycle computes 168 trajectories × 20 steps = 3360 lookups. At 50Hz this is 168,000 map lookups/second in Python — may hit CPU limits and cause the ROS timer to skip cycles. Also: the simulator itself runs at a limited physics rate, so commands faster than ~20Hz provide no benefit.</p>
+        <p style="color:#fc8181;">Symptom: CPU spikes to 100%, control loop timer warnings in terminal.</p>
+      </div>
+      <div class="param-col current">
+        <div class="col-label">✅ Current Value: 0.1s (10 Hz)</div>
+        <p>Standard control frequency for robot navigation. Fast enough for smooth motion at 0.18 m/s (robot moves 1.8cm per control cycle). Slow enough for the Python DWA computation to finish well within the 100ms budget. Matches the simulator's effective physics update rate.</p>
+        <p style="color:#68d391;">10Hz is the industry standard for differential drive navigation. ROS Nav2 also defaults to 10Hz for DWA.</p>
+      </div>
+      <div class="param-col too-high">
+        <div class="col-label">⬆ Too Slow (e.g. 0.5s = 2Hz)</div>
+        <p>Robot only updates its velocity command every 500ms. Between updates, it drives "blind" at the last commanded velocity. At 0.18 m/s for 500ms = 9cm of blind travel — enough to miss a wall that appeared in the map update. Motion appears jerky and stalled between updates.</p>
+        <p style="color:#f6ad55;">Symptom: robot moves in visible "lurches" — 9cm spurts with long pauses between.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="text-align:center;padding:40px;color:#4a5568;font-size:12px;">
+  25 parameters · 3 nodes · 1 launch file: phase1_sim.launch.py · ROBOT_RADIUS = 0.16
+</div>
+
+</body>
+</html>

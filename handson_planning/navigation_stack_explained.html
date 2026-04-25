@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROS2 Navigation Stack — Visual Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: #1a1d2e; border-bottom: 1px solid #2d3748;
+    display: flex; gap: 4px; padding: 10px 20px; overflow-x: auto;
+  }
+  nav a {
+    color: #90cdf4; text-decoration: none; font-size: 13px;
+    padding: 6px 14px; border-radius: 20px; white-space: nowrap;
+    border: 1px solid #2d3748; transition: all 0.2s;
+  }
+  nav a:hover { background: #2d3748; color: #fff; }
+
+  section { padding: 80px 40px 60px; max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 2.2rem; font-weight: 800; color: #fff; margin-bottom: 8px; }
+  h2 { font-size: 1.6rem; font-weight: 700; color: #90cdf4; margin-bottom: 24px; border-bottom: 2px solid #2d3748; padding-bottom: 12px; }
+  h3 { font-size: 1.1rem; font-weight: 700; color: #fbd38d; margin-bottom: 12px; }
+  p  { line-height: 1.7; color: #cbd5e0; margin-bottom: 12px; font-size: 15px; }
+  .subtitle { color: #718096; font-size: 16px; margin-bottom: 40px; }
+
+  .card { background: #1a1d2e; border: 1px solid #2d3748; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+  .card-row { display: grid; gap: 16px; margin-bottom: 20px; }
+  .card-row.cols2 { grid-template-columns: 1fr 1fr; }
+  .card-row.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  pre {
+    background: #0d1117; border: 1px solid #2d3748; border-radius: 8px;
+    padding: 16px; font-size: 12.5px; overflow-x: auto; line-height: 1.6;
+    color: #e2e8f0; margin: 12px 0;
+  }
+  .cm  { color: #6a9955; }
+  .kw  { color: #c586c0; }
+  .fn  { color: #dcdcaa; }
+  .nm  { color: #9cdcfe; }
+  .st  { color: #ce9178; }
+  .nu  { color: #b5cea8; }
+  .hl  { background: #1f2937; border-left: 3px solid #f6ad55; padding-left: 8px; display: block; }
+
+  .flow { display: flex; align-items: center; gap: 0; flex-wrap: wrap; margin: 20px 0; }
+  .fbox {
+    padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    text-align: center; min-width: 110px; line-height: 1.3;
+  }
+  .farrow { color: #4a5568; font-size: 22px; padding: 0 4px; }
+  .fbox.map  { background: #1c4532; border: 2px solid #48bb78; color: #9ae6b4; }
+  .fbox.rrt  { background: #3d2008; border: 2px solid #ed8936; color: #fbd38d; }
+  .fbox.dwa  { background: #1a365d; border: 2px solid #63b3ed; color: #bee3f8; }
+  .fbox.ros  { background: #322659; border: 2px solid #9f7aea; color: #e9d8fd; }
+  .fbox.rb   { background: #1a202c; border: 2px solid #718096; color: #e2e8f0; }
+  .fbox.good { background: #22543d; border: 2px solid #68d391; color: #f0fff4; }
+  .fbox.bad  { background: #742a2a; border: 2px solid #fc8181; color: #fff5f5; }
+
+  .step-grid { display: grid; gap: 12px; }
+  .step-grid.s5 { grid-template-columns: repeat(5, 1fr); }
+  .step-grid.s3 { grid-template-columns: repeat(3, 1fr); }
+
+  .step { border-radius: 10px; padding: 16px; border: 1px solid transparent; }
+  .step .step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px; margin-bottom: 10px;
+  }
+  .step .step-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+  .step .step-desc  { font-size: 12px; line-height: 1.5; opacity: 0.85; }
+
+  .step.s-map  { background: #1a2e22; border-color: #48bb78; }
+  .step.s-map  .step-num { background: #276749; color: #9ae6b4; }
+  .step.s-map  .step-title { color: #9ae6b4; }
+  .step.s-rrt  { background: #2a1a08; border-color: #ed8936; }
+  .step.s-rrt  .step-num { background: #744210; color: #fbd38d; }
+  .step.s-rrt  .step-title { color: #fbd38d; }
+  .step.s-dwa  { background: #0f1e36; border-color: #63b3ed; }
+  .step.s-dwa  .step-num { background: #2c5282; color: #90cdf4; }
+  .step.s-dwa  .step-title { color: #90cdf4; }
+
+  .highlight-box { border-radius: 10px; padding: 16px 20px; margin: 16px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .highlight-box.info { background: #1a365d; border: 1px solid #3182ce; }
+  .highlight-box.warn { background: #3d2008; border: 1px solid #dd6b20; }
+  .highlight-box.ok   { background: #1a3a2a; border: 1px solid #38a169; }
+  .highlight-box .icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+  .highlight-box .text { font-size: 13px; line-height: 1.6; color: #cbd5e0; }
+
+  .lobar { height: 22px; border-radius: 4px; margin: 6px 0; display: flex; align-items: center; padding: 0 10px; font-size: 11px; font-weight: 700; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #2d3748; padding: 10px 14px; text-align: left; color: #90cdf4; }
+  td { padding: 10px 14px; border-bottom: 1px solid #2d3748; }
+  tr:hover td { background: #1a202c; }
+  code { background: #1a202c; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #9cdcfe; }
+
+  .qa { border-left: 4px solid #9f7aea; padding: 16px 20px; background: #1a1d2e; border-radius: 0 10px 10px 0; margin: 16px 0; }
+  .qa .q { color: #d6bcfa; font-weight: 700; margin-bottom: 8px; font-size: 14px; }
+  .qa .a { color: #a0aec0; font-size: 13px; line-height: 1.6; }
+
+  .svg-wrap { overflow-x: auto; background: #0d1117; border-radius: 12px; padding: 20px; border: 1px solid #2d3748; }
+
+  .rviz-item { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+  .rviz-color { flex-shrink: 0; border-radius: 3px; }
+
+  @media (max-width: 768px) {
+    .card-row.cols2, .card-row.cols3, .step-grid.s5, .step-grid.s3 { grid-template-columns: 1fr; }
+    section { padding: 80px 16px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#overview">🗺 Overview</a>
+  <a href="#mapping">🟢 Mapping</a>
+  <a href="#rrt">🟠 RRT*</a>
+  <a href="#dwa">🔵 DWA</a>
+  <a href="#interaction">🔄 Sequence</a>
+  <a href="#rviz">👁 RViz</a>
+  <a href="#questions">🎓 Questions</a>
+</nav>
+
+<!-- ═══════════ OVERVIEW ═══════════ -->
+<section id="overview">
+  <h1>ROS2 TurtleBot4 Navigation Stack</h1>
+  <p class="subtitle">Phase 1 — Live Mapping + RRT* Global Planning + DWA Local Planning</p>
+
+  <div class="svg-wrap">
+    <svg viewBox="0 0 1100 360" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:700px;">
+      <defs>
+        <marker id="ag" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#48bb78"/></marker>
+        <marker id="ao" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#ed8936"/></marker>
+        <marker id="ab" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#63b3ed"/></marker>
+        <marker id="ap" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#9f7aea"/></marker>
+        <marker id="ar" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#fc8181"/></marker>
+        <marker id="a2" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#4a5568"/></marker>
+      </defs>
+
+      <!-- Robot -->
+      <rect x="20" y="140" width="140" height="80" rx="10" fill="#1a202c" stroke="#718096" stroke-width="2"/>
+      <text x="90" y="170" fill="#e2e8f0" font-size="14" font-weight="bold" text-anchor="middle">🤖 TurtleBot4</text>
+      <text x="90" y="188" fill="#718096" font-size="11" text-anchor="middle">Stonefish Sim</text>
+      <text x="90" y="205" fill="#718096" font-size="10" text-anchor="middle">/scan  /odom  /cmd_vel</text>
+
+      <!-- mapping_node -->
+      <rect x="220" y="50" width="170" height="100" rx="10" fill="#1a2e22" stroke="#48bb78" stroke-width="2"/>
+      <text x="305" y="78" fill="#9ae6b4" font-size="13" font-weight="bold" text-anchor="middle">mapping_node</text>
+      <text x="305" y="96" fill="#68d391" font-size="10" text-anchor="middle">Log-odds sensor model</text>
+      <text x="305" y="111" fill="#68d391" font-size="10" text-anchor="middle">Bresenham ray casting</text>
+      <text x="305" y="126" fill="#68d391" font-size="10" text-anchor="middle">Sticky walls (lock &gt; 2.0)</text>
+      <text x="305" y="141" fill="#48bb78" font-size="9" text-anchor="middle">publishes → /projected_map</text>
+
+      <!-- global_planner -->
+      <rect x="460" y="50" width="170" height="100" rx="10" fill="#2a1a08" stroke="#ed8936" stroke-width="2"/>
+      <text x="545" y="78" fill="#fbd38d" font-size="13" font-weight="bold" text-anchor="middle">global_planner</text>
+      <text x="545" y="96" fill="#f6ad55" font-size="10" text-anchor="middle">RRT* algorithm</text>
+      <text x="545" y="111" fill="#f6ad55" font-size="10" text-anchor="middle">C-space inflation 0.16m</text>
+      <text x="545" y="126" fill="#f6ad55" font-size="10" text-anchor="middle">Online replanning 2s</text>
+      <text x="545" y="141" fill="#ed8936" font-size="9" text-anchor="middle">publishes → /plan</text>
+
+      <!-- dwa_planner -->
+      <rect x="700" y="50" width="170" height="100" rx="10" fill="#0f1e36" stroke="#63b3ed" stroke-width="2"/>
+      <text x="785" y="78" fill="#90cdf4" font-size="13" font-weight="bold" text-anchor="middle">dwa_planner</text>
+      <text x="785" y="96" fill="#63b3ed" font-size="10" text-anchor="middle">Velocity sampling 8×21</text>
+      <text x="785" y="111" fill="#63b3ed" font-size="10" text-anchor="middle">Trajectory scoring</text>
+      <text x="785" y="126" fill="#63b3ed" font-size="10" text-anchor="middle">Phase A / B / C control</text>
+      <text x="785" y="141" fill="#90cdf4" font-size="9" text-anchor="middle">publishes → /cmd_vel</text>
+
+      <!-- RViz -->
+      <rect x="940" y="50" width="140" height="100" rx="10" fill="#1a1d2e" stroke="#9f7aea" stroke-width="2"/>
+      <text x="1010" y="78" fill="#d6bcfa" font-size="13" font-weight="bold" text-anchor="middle">RViz2</text>
+      <text x="1010" y="96" fill="#b794f4" font-size="10" text-anchor="middle">/projected_map</text>
+      <text x="1010" y="111" fill="#b794f4" font-size="10" text-anchor="middle">/plan + /rrt_tree</text>
+      <text x="1010" y="126" fill="#b794f4" font-size="10" text-anchor="middle">/dwa_trajectories</text>
+      <text x="1010" y="141" fill="#b794f4" font-size="10" text-anchor="middle">/local_path</text>
+
+      <!-- Goal -->
+      <rect x="460" y="270" width="170" height="55" rx="10" fill="#44337a" stroke="#9f7aea" stroke-width="2"/>
+      <text x="545" y="298" fill="#e9d8fd" font-size="13" font-weight="bold" text-anchor="middle">👆 2D Goal Pose</text>
+      <text x="545" y="315" fill="#b794f4" font-size="10" text-anchor="middle">user click → /goal_pose</text>
+
+      <!-- ARROWS -->
+      <!-- Robot → mapping (/scan) -->
+      <line x1="160" y1="160" x2="218" y2="110" stroke="#48bb78" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ag)"/>
+      <text x="170" y="128" fill="#48bb78" font-size="9">/scan</text>
+
+      <!-- Robot → global (/odom) -->
+      <line x1="160" y1="170" x2="458" y2="105" stroke="#ed8936" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ao)"/>
+      <text x="320" y="120" fill="#ed8936" font-size="9">/odom</text>
+
+      <!-- Robot → dwa (/odom) -->
+      <line x1="160" y1="175" x2="698" y2="105" stroke="#63b3ed" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ab)"/>
+
+      <!-- mapping → global (/projected_map) -->
+      <line x1="390" y1="95" x2="458" y2="95" stroke="#48bb78" stroke-width="2" marker-end="url(#ag)"/>
+      <text x="408" y="88" fill="#48bb78" font-size="9">/projected_map</text>
+
+      <!-- mapping → dwa (/projected_map) -->
+      <line x1="390" y1="105" x2="698" y2="105" stroke="#48bb78" stroke-width="2" marker-end="url(#ag)"/>
+
+      <!-- mapping → RViz -->
+      <line x1="390" y1="75" x2="938" y2="75" stroke="#9f7aea" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ap)"/>
+
+      <!-- global → dwa (/plan) -->
+      <line x1="630" y1="115" x2="698" y2="115" stroke="#ed8936" stroke-width="2.5" marker-end="url(#ao)"/>
+      <text x="648" y="108" fill="#ed8936" font-size="9">/plan</text>
+
+      <!-- global → RViz -->
+      <line x1="630" y1="85" x2="938" y2="85" stroke="#9f7aea" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ap)"/>
+
+      <!-- dwa → cmd_vel → Robot -->
+      <line x1="785" y1="150" x2="785" y2="235" stroke="#63b3ed" stroke-width="2"/>
+      <rect x="730" y="235" width="110" height="32" rx="6" fill="#1a202c" stroke="#63b3ed" stroke-width="1.5"/>
+      <text x="785" y="254" fill="#63b3ed" font-size="10" text-anchor="middle">/cmd_vel</text>
+      <line x1="730" y1="251" x2="220" y2="200" stroke="#63b3ed" stroke-width="2" marker-end="url(#ab)"/>
+
+      <!-- dwa → RViz -->
+      <line x1="870" y1="85" x2="938" y2="85" stroke="#9f7aea" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+      <!-- Goal → global_planner -->
+      <line x1="545" y1="270" x2="545" y2="152" stroke="#9f7aea" stroke-width="2" marker-end="url(#ap)"/>
+
+      <!-- dwa replan_request → global -->
+      <path d="M 700 130 Q 640 195 558 152" stroke="#fc8181" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#ar)"/>
+      <text x="590" y="185" fill="#fc8181" font-size="9">/replan_request</text>
+
+      <!-- Legend -->
+      <rect x="20" y="310" width="680" height="36" rx="6" fill="#1a202c" stroke="#2d3748"/>
+      <line x1="35" y1="328" x2="65" y2="328" stroke="#48bb78" stroke-width="2"/>
+      <text x="70" y="332" fill="#9ae6b4" font-size="10">/projected_map</text>
+      <line x1="165" y1="328" x2="195" y2="328" stroke="#ed8936" stroke-width="2"/>
+      <text x="200" y="332" fill="#fbd38d" font-size="10">/plan (global path)</text>
+      <line x1="310" y1="328" x2="340" y2="328" stroke="#63b3ed" stroke-width="2"/>
+      <text x="345" y="332" fill="#90cdf4" font-size="10">/cmd_vel (motors)</text>
+      <line x1="440" y1="328" x2="470" y2="328" stroke="#fc8181" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <text x="475" y="332" fill="#fc8181" font-size="10">/replan_request</text>
+      <line x1="570" y1="328" x2="600" y2="328" stroke="#9f7aea" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <text x="605" y="332" fill="#d6bcfa" font-size="10">→ RViz</text>
+    </svg>
+  </div>
+
+  <div class="highlight-box ok" style="margin-top:24px;">
+    <div class="icon">💡</div>
+    <div class="text"><strong>The key insight:</strong> Three nodes run completely in parallel. mapping_node builds the map continuously. global_planner plans through the whole map once. dwa_planner reacts every 100ms. They communicate only through ROS topics — completely decoupled. If one node crashes, the others keep running.</div>
+  </div>
+</section>
+
+<!-- ═══════════ MAPPING ═══════════ -->
+<section id="mapping">
+  <h2>🟢 mapping_node.py — Building the Map</h2>
+
+  <div class="card">
+    <h3>Every Scan Cycle (2 Hz) — What Happens</h3>
+    <div class="flow">
+      <div class="fbox rb" style="font-size:12px;">LiDAR fires<br>360 beams</div>
+      <div class="farrow">→</div>
+      <div class="fbox map" style="font-size:12px;">TF2 lookup:<br>Where is the<br>sensor right now?</div>
+      <div class="farrow">→</div>
+      <div class="fbox map" style="font-size:12px;">Per beam:<br>Bresenham<br>ray trace</div>
+      <div class="farrow">→</div>
+      <div class="fbox map" style="font-size:12px;">Update cell<br>log-odds<br>+hit or −free</div>
+      <div class="farrow">→</div>
+      <div class="fbox map" style="font-size:12px;">to_ros_array()<br>convert to<br>0 / 100 / −1</div>
+      <div class="farrow">→</div>
+      <div class="fbox ros" style="font-size:12px;">Publish<br>/projected_map</div>
+    </div>
+  </div>
+
+  <div class="card-row cols2">
+    <div class="card">
+      <h3>📊 Log-Odds Accumulation — How Confidence Builds</h3>
+      <p>Each cell stores one float. It goes up when hit, down when a free ray passes through. Think of it as a vote counter:</p>
+
+      <div style="margin:16px 0;">
+        <div style="color:#718096;font-size:11px;margin-bottom:4px;">Start — no evidence</div>
+        <div class="lobar" style="width:50%;background:#2d3748;color:#a0aec0;">0.00 → UNKNOWN (grey in RViz)</div>
+
+        <div style="color:#f6ad55;font-size:11px;margin:10px 0 4px;">After 1 LiDAR hit  (+0.85)</div>
+        <div class="lobar" style="width:58%;background:#744210;">0.85 → still unknown</div>
+
+        <div style="color:#f6ad55;font-size:11px;margin:10px 0 4px;">After 2 hits  (0.85 × 2)</div>
+        <div class="lobar" style="width:66%;background:#975a16;">1.70 → still unknown</div>
+
+        <div style="color:#9ae6b4;font-size:11px;margin:10px 0 4px;">After 3 hits  (0.85 × 3 = 2.55) — threshold = 2.0 ✅</div>
+        <div class="lobar" style="width:78%;background:#276749;">2.55 → WALL (black = 100)</div>
+
+        <div style="color:#90cdf4;font-size:11px;margin:10px 0 4px;">After 3 free rays  (−0.20 × 3 = −0.60) — threshold = −0.5 ✅</div>
+        <div class="lobar" style="width:30%;background:#1a365d;">−0.60 → FREE (white = 0)</div>
+      </div>
+
+      <pre><span class="cm"># The actual code in to_ros_array()</span>
+out[self.grid >  <span class="nu">2.0</span>] = <span class="nu">100</span>  <span class="cm"># wall (3+ hits)</span>
+out[self.grid < <span class="nu">-0.5</span>] = <span class="nu">0</span>    <span class="cm"># free (3+ free rays)</span>
+<span class="cm"># everything else = -1 (unknown/grey)</span></pre>
+    </div>
+
+    <div class="card">
+      <h3>🔒 Sticky Walls — Preventing False Erasure</h3>
+      <p>A confirmed wall cell (log-odds &gt; 2.0) is <strong>protected</strong> from free-ray erasure:</p>
+      <pre><span class="kw">for</span> c, r <span class="kw">in</span> cells[<span class="nu">1</span>:-<span class="nu">1</span>]:      <span class="cm"># intermediate cells</span>
+    <span class="hl">    <span class="kw">if</span> self.grid[r, c] < <span class="nu">2.0</span>:  <span class="cm"># sticky wall check</span></span>
+        <span class="fn">update_cell</span>(c, r, l_free)</pre>
+      <div class="highlight-box warn">
+        <div class="icon">⚠️</div>
+        <div class="text"><strong>Why needed?</strong> Sensor noise, simulator artifacts, or glass surfaces can cause a beam to "pass through" a thin wall. Without sticky walls, that single ghost free-ray would erase a confirmed wall, creating a fake gap the robot tries to drive through.</div>
+      </div>
+      <div class="highlight-box info" style="margin-top:8px;">
+        <div class="icon">🔑</div>
+        <div class="text"><strong>The trade-off:</strong> Once a cell is locked as a wall, it can never be corrected. We accept this because false-positive walls are safer than false-negative gaps.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>📐 Bresenham Ray Casting — Finding All Cells a Beam Crosses</h3>
+    <div class="card-row cols2">
+      <div>
+        <p>When a laser beam travels from sensor to wall, it crosses many grid cells. We need to mark all intermediate cells as FREE and only the endpoint as WALL. Bresenham's algorithm finds every cell the line touches using only integer arithmetic — no floating point, no gaps, no duplicates.</p>
+        <p>The algorithm tracks an <code>err</code> term. When the error crosses a threshold, it steps in the row direction; otherwise it steps in the column direction. This traces the nearest-pixel approximation of a straight line.</p>
+        <pre><span class="cm"># Pseudocode of what Bresenham gives us:</span>
+sensor at (col=2, row=2), hit at (col=8, row=5)
+
+Cells traced:
+(2,2) → FREE  ← sensor cell
+(3,2) → FREE
+(4,3) → FREE
+(5,3) → FREE
+(6,4) → FREE
+(7,4) → FREE
+(8,5) → WALL  ← endpoint: +0.85</pre>
+      </div>
+      <div>
+        <svg viewBox="0 0 280 220" style="width:100%;background:#0d1117;border-radius:8px;border:1px solid #2d3748;">
+          <defs>
+            <pattern id="grd" width="28" height="28" patternUnits="userSpaceOnUse">
+              <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#1a202c" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <rect width="280" height="220" fill="url(#grd)"/>
+          <!-- Free cells -->
+          <rect x="28" y="28" width="28" height="28" fill="#1a365d" opacity="0.8"/>
+          <rect x="56" y="28" width="28" height="28" fill="#1a365d" opacity="0.8"/>
+          <rect x="84" y="56" width="28" height="28" fill="#1a365d" opacity="0.8"/>
+          <rect x="112" y="56" width="28" height="28" fill="#1a365d" opacity="0.8"/>
+          <rect x="140" y="84" width="28" height="28" fill="#1a365d" opacity="0.8"/>
+          <rect x="168" y="84" width="28" height="28" fill="#1a365d" opacity="0.8"/>
+          <!-- Wall cell -->
+          <rect x="196" y="112" width="28" height="28" fill="#276749" opacity="0.9"/>
+          <!-- Laser line -->
+          <line x1="42" y1="42" x2="210" y2="126" stroke="#48bb78" stroke-width="2" stroke-dasharray="5,3"/>
+          <!-- Labels -->
+          <text x="37" y="68" fill="#90cdf4" font-size="8">FREE</text>
+          <text x="65" y="68" fill="#90cdf4" font-size="8">FREE</text>
+          <text x="93" y="96" fill="#90cdf4" font-size="8">FREE</text>
+          <text x="121" y="96" fill="#90cdf4" font-size="8">FREE</text>
+          <text x="149" y="124" fill="#90cdf4" font-size="8">FREE</text>
+          <text x="177" y="124" fill="#90cdf4" font-size="8">FREE</text>
+          <text x="199" y="152" fill="#fbd38d" font-size="8">WALL</text>
+          <!-- Dots -->
+          <circle cx="42" cy="42" r="5" fill="#9ae6b4"/>
+          <circle cx="210" cy="126" r="5" fill="#ed8936"/>
+          <text x="48" y="30" fill="#9ae6b4" font-size="9">Sensor</text>
+          <text x="218" y="120" fill="#ed8936" font-size="9">Hit</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>⚙️ Why These Parameters Were Tuned This Way</h3>
+    <table>
+      <tr><th>Parameter</th><th>Value</th><th>Effect</th><th>Why this value?</th></tr>
+      <tr><td><code>l_occ</code></td><td>+0.85</td><td>Evidence added per LiDAR hit</td><td>3 hits = 2.55 &gt; 2.0 threshold. Fast enough to detect walls while moving at 0.18 m/s.</td></tr>
+      <tr><td><code>l_free</code></td><td>−0.20</td><td>Evidence subtracted per free ray</td><td>Was −0.40 — too aggressive, punched through confirmed walls and created double-wall artifacts.</td></tr>
+      <tr><td>Wall threshold</td><td>&gt; 2.0</td><td>Minimum log-odds for black cell</td><td>Was 1.0 (only 2 hits needed) — too noisy, single reflections created phantom walls.</td></tr>
+      <tr><td>Free threshold</td><td>&lt; −0.5</td><td>Minimum for white cell</td><td>Requires 3 consistent free scans. Prevents open areas from appearing free from just one scan.</td></tr>
+      <tr><td><code>invert_scan_angles</code></td><td>True</td><td>beam = l_yaw − scan_angle</td><td>Stonefish mounts LiDAR upside-down. Without this, all beams point in the mirror direction.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════ RRT* ═══════════ -->
+<section id="rrt">
+  <h2>🟠 global_planner.py — RRT* Path Planning</h2>
+
+  <div class="card">
+    <h3>RRT* Algorithm Flowchart</h3>
+    <div class="svg-wrap">
+    <svg viewBox="0 0 960 500" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:700px;">
+      <defs>
+        <marker id="fa" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#718096"/></marker>
+        <marker id="fg" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#48bb78"/></marker>
+        <marker id="fr" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#fc8181"/></marker>
+        <marker id="fo" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#ed8936"/></marker>
+      </defs>
+
+      <!-- 1. Inflate map -->
+      <rect x="20" y="20" width="160" height="55" rx="8" fill="#2a1a08" stroke="#ed8936" stroke-width="2"/>
+      <text x="100" y="44" fill="#fbd38d" font-size="12" font-weight="bold" text-anchor="middle">1. Inflate map</text>
+      <text x="100" y="62" fill="#f6ad55" font-size="10" text-anchor="middle">expand walls by 0.16m</text>
+      <line x1="100" y1="75" x2="100" y2="100" stroke="#718096" stroke-width="1.5" marker-end="url(#fa)"/>
+
+      <!-- 2. Init tree -->
+      <rect x="20" y="102" width="160" height="45" rx="8" fill="#1a2e22" stroke="#48bb78" stroke-width="1.5"/>
+      <text x="100" y="125" fill="#9ae6b4" font-size="11" font-weight="bold" text-anchor="middle">2. tree = {start}</text>
+      <text x="100" y="140" fill="#68d391" font-size="10" text-anchor="middle">node: (pos, parent, cost)</text>
+      <line x1="100" y1="147" x2="100" y2="175" stroke="#718096" stroke-width="1.5" marker-end="url(#fa)"/>
+
+      <!-- Loop label -->
+      <text x="100" y="190" fill="#4a5568" font-size="11" text-anchor="middle">── repeat 5000 times ──</text>
+      <line x1="100" y1="196" x2="100" y2="218" stroke="#718096" stroke-width="1.5" marker-end="url(#fa)"/>
+
+      <!-- 3. Sample -->
+      <rect x="20" y="220" width="160" height="55" rx="8" fill="#1a2438" stroke="#63b3ed" stroke-width="2"/>
+      <text x="100" y="244" fill="#90cdf4" font-size="12" font-weight="bold" text-anchor="middle">3. Sample point</text>
+      <text x="100" y="260" fill="#63b3ed" font-size="10" text-anchor="middle">15% = goal   85% = random</text>
+      <line x1="100" y1="275" x2="100" y2="300" stroke="#718096" stroke-width="1.5" marker-end="url(#fa)"/>
+
+      <!-- 4. Nearest -->
+      <rect x="20" y="302" width="160" height="45" rx="8" fill="#1a2438" stroke="#63b3ed" stroke-width="1.5"/>
+      <text x="100" y="325" fill="#90cdf4" font-size="11" font-weight="bold" text-anchor="middle">4. Find nearest node</text>
+      <text x="100" y="340" fill="#63b3ed" font-size="10" text-anchor="middle">min distance in tree</text>
+      <line x1="100" y1="347" x2="100" y2="375" stroke="#718096" stroke-width="1.5" marker-end="url(#fa)"/>
+
+      <!-- 5. Extend -->
+      <rect x="20" y="377" width="160" height="45" rx="8" fill="#1a2438" stroke="#63b3ed" stroke-width="1.5"/>
+      <text x="100" y="400" fill="#90cdf4" font-size="11" font-weight="bold" text-anchor="middle">5. Extend 0.3m toward it</text>
+      <text x="100" y="415" fill="#63b3ed" font-size="10" text-anchor="middle">new_pos along direction</text>
+      <line x1="180" y1="400" x2="230" y2="300" stroke="#718096" stroke-width="1.5" marker-end="url(#fa)"/>
+
+      <!-- Collision check -->
+      <polygon points="300,260 370,230 440,260 370,290" fill="#1a202c" stroke="#f6ad55" stroke-width="2"/>
+      <text x="370" y="256" fill="#fbd38d" font-size="10" font-weight="bold" text-anchor="middle">Collision</text>
+      <text x="370" y="270" fill="#fbd38d" font-size="10" font-weight="bold" text-anchor="middle">free?</text>
+
+      <!-- NO → skip -->
+      <line x1="370" y1="230" x2="370" y2="175" stroke="#fc8181" stroke-width="1.5" marker-end="url(#fr)"/>
+      <rect x="320" y="135" width="100" height="35" rx="6" fill="#742a2a" stroke="#fc8181" stroke-width="1.5"/>
+      <text x="370" y="157" fill="#fc8181" font-size="11" font-weight="bold" text-anchor="middle">SKIP (discard)</text>
+      <text x="390" y="200" fill="#fc8181" font-size="10">NO</text>
+
+      <!-- YES → rewire -->
+      <line x1="440" y1="260" x2="490" y2="260" stroke="#48bb78" stroke-width="2" marker-end="url(#fg)"/>
+      <text x="453" y="250" fill="#48bb78" font-size="10">YES</text>
+
+      <!-- 6. Rewire (RRT* star) -->
+      <rect x="492" y="210" width="190" height="100" rx="8" fill="#2a1a08" stroke="#ed8936" stroke-width="2.5"/>
+      <text x="587" y="234" fill="#fbd38d" font-size="12" font-weight="bold" text-anchor="middle">6. RRT* Rewire ⭐</text>
+      <text x="587" y="252" fill="#f6ad55" font-size="10" text-anchor="middle">Check all nodes within 1m</text>
+      <text x="587" y="268" fill="#f6ad55" font-size="10" text-anchor="middle">Connect via cheapest parent</text>
+      <text x="587" y="284" fill="#f6ad55" font-size="10" text-anchor="middle">Update neighbours if cheaper</text>
+      <text x="587" y="300" fill="#ed8936" font-size="9" text-anchor="middle">← what makes RRT "star" optimal</text>
+      <line x1="682" y1="260" x2="730" y2="260" stroke="#718096" stroke-width="1.5" marker-end="url(#fa)"/>
+
+      <!-- 7. Add node -->
+      <rect x="732" y="225" width="160" height="70" rx="8" fill="#1a2e22" stroke="#48bb78" stroke-width="1.5"/>
+      <text x="812" y="252" fill="#9ae6b4" font-size="11" font-weight="bold" text-anchor="middle">7. Add to tree</text>
+      <text x="812" y="270" fill="#68d391" font-size="10" text-anchor="middle">tree[id] = (pos, parent, cost)</text>
+      <line x1="812" y1="295" x2="812" y2="330" stroke="#718096" stroke-width="1.5" marker-end="url(#fa)"/>
+
+      <!-- Goal reached? -->
+      <polygon points="812,360 880,335 948,360 880,385" fill="#1a202c" stroke="#d6bcfa" stroke-width="2"/>
+      <text x="880" y="356" fill="#d6bcfa" font-size="10" font-weight="bold" text-anchor="middle">Near</text>
+      <text x="880" y="370" fill="#d6bcfa" font-size="10" font-weight="bold" text-anchor="middle">goal?</text>
+
+      <!-- NO → loop back -->
+      <line x1="948" y1="360" x2="958" y2="360" stroke="#fc8181" stroke-width="1.5"/>
+      <line x1="958" y1="360" x2="958" y2="450" stroke="#fc8181" stroke-width="1.5"/>
+      <line x1="958" y1="450" x2="100" y2="450" stroke="#fc8181" stroke-width="1.5"/>
+      <line x1="100" y1="450" x2="100" y2="422" stroke="#fc8181" stroke-width="1.5" marker-end="url(#fr)"/>
+      <text x="500" y="465" fill="#fc8181" font-size="9" text-anchor="middle">NO — next iteration</text>
+
+      <!-- YES → trace path -->
+      <line x1="880" y1="335" x2="880" y2="280" stroke="#48bb78" stroke-width="1.5" marker-end="url(#fg)"/>
+      <rect x="830" y="250" width="100" height="28" rx="6" fill="#276749" stroke="#48bb78" stroke-width="1.5"/>
+      <text x="880" y="268" fill="#9ae6b4" font-size="10" font-weight="bold" text-anchor="middle">Trace path ✅</text>
+      <text x="900" y="350" fill="#48bb78" font-size="10">YES</text>
+
+      <!-- Publish -->
+      <rect x="822" y="160" width="116" height="35" rx="6" fill="#322659" stroke="#9f7aea" stroke-width="1.5"/>
+      <text x="880" y="182" fill="#d6bcfa" font-size="11" text-anchor="middle">Publish /plan ✅</text>
+      <line x1="880" y1="250" x2="880" y2="197" stroke="#9f7aea" stroke-width="1.5" marker-end="url(#fa)"/>
+    </svg>
+    </div>
+  </div>
+
+  <div class="card-row cols2">
+    <div class="card">
+      <h3>🏗 C-Space Inflation — The Key Concept</h3>
+      <p>Before RRT* runs, every wall cell is expanded outward by the robot's radius (0.16m). This converts the planning problem from "robot with a body" to "point robot" — much simpler to solve.</p>
+      <svg viewBox="0 0 300 180" style="width:100%;background:#0d1117;border-radius:8px;border:1px solid #2d3748;">
+        <!-- Wall -->
+        <rect x="20" y="20" width="20" height="140" fill="#2d3748" stroke="#4a5568"/>
+        <text x="10" y="16" fill="#718096" font-size="9">Wall</text>
+        <!-- Inflation zone -->
+        <rect x="20" y="20" width="55" height="140" fill="#744210" opacity="0.35"/>
+        <line x1="75" y1="20" x2="75" y2="160" stroke="#ed8936" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="42" y="170" fill="#f6ad55" font-size="8" text-anchor="middle">inflated</text>
+        <!-- Bad path -->
+        <line x1="90" y1="20" x2="90" y2="160" stroke="#fc8181" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <circle cx="90" cy="90" r="18" fill="none" stroke="#fc8181" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <text x="115" y="18" fill="#fc8181" font-size="8">BAD: clips wall</text>
+        <!-- Good path -->
+        <line x1="160" y1="20" x2="160" y2="160" stroke="#48bb78" stroke-width="2"/>
+        <circle cx="160" cy="90" r="18" fill="none" stroke="#48bb78" stroke-width="1.5"/>
+        <text x="178" y="18" fill="#48bb78" font-size="8">GOOD: clear</text>
+        <!-- Arrows -->
+        <text x="22" y="95" fill="#f6ad55" font-size="7">← 0.16m →</text>
+      </svg>
+      <p style="font-size:12px;margin-top:8px;color:#a0aec0;">Unknown cells (−1) are <strong>not inflated</strong> — this lets RRT* plan through unexplored space during live mapping.</p>
+    </div>
+
+    <div class="card">
+      <h3>🔁 Online Replanning — Keeping the Path Safe</h3>
+      <p>The map updates continuously. A wall might appear in front of the robot's planned path. The replanner checks for this:</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin:16px 0;">
+        <div class="fbox rrt" style="text-align:left;padding:10px 14px;">⏱ Timer fires every <strong>2.0s</strong></div>
+        <div style="color:#4a5568;text-align:center;font-size:18px;">↓</div>
+        <div class="fbox rrt" style="text-align:left;padding:10px 14px;">🔍 Check <strong>next 2 waypoints only</strong> (not whole path)</div>
+        <div style="color:#4a5568;text-align:center;font-size:18px;">↓</div>
+        <div style="display:flex;gap:8px;">
+          <div class="fbox good" style="flex:1;font-size:12px;">Clear ✅<br>keep driving</div>
+          <div class="fbox bad" style="flex:1;font-size:12px;">Blocked ❌<br>RRT* in background</div>
+        </div>
+      </div>
+      <div class="highlight-box ok">
+        <div class="icon">🔑</div>
+        <div class="text"><strong>Critical:</strong> DWA is never stopped during replanning. It keeps executing the old plan while RRT* computes a new one in a background thread. No freezing.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ DWA ═══════════ -->
+<section id="dwa">
+  <h2>🔵 dwa_planner.py — Dynamic Window Approach</h2>
+
+  <div class="card">
+    <h3>Three-Phase State Machine — Every 100ms</h3>
+    <div class="svg-wrap">
+    <svg viewBox="0 0 920 195" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:600px;">
+      <defs>
+        <marker id="sm" markerWidth="8" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#718096"/></marker>
+      </defs>
+
+      <!-- Phase A -->
+      <rect x="10" y="30" width="210" height="130" rx="12" fill="#1a2438" stroke="#63b3ed" stroke-width="2"/>
+      <text x="115" y="58" fill="#90cdf4" font-size="15" font-weight="bold" text-anchor="middle">PHASE A</text>
+      <text x="115" y="76" fill="#63b3ed" font-size="11" text-anchor="middle">Rotate toward waypoint</text>
+      <text x="115" y="98" fill="#a0aec0" font-size="10" text-anchor="middle">P-controller:</text>
+      <text x="115" y="114" fill="#e2e8f0" font-size="10" text-anchor="middle">ω = k_w × angle_error</text>
+      <text x="115" y="130" fill="#a0aec0" font-size="10" text-anchor="middle">v = 0.0 (no forward)</text>
+      <text x="115" y="150" fill="#fbd38d" font-size="10" text-anchor="middle">Exit when error &lt; 0.20 rad</text>
+
+      <!-- Arrow A→B -->
+      <line x1="220" y1="95" x2="278" y2="95" stroke="#718096" stroke-width="2" marker-end="url(#sm)"/>
+      <text x="230" y="88" fill="#9ae6b4" font-size="9">aligned</text>
+
+      <!-- Phase B -->
+      <rect x="280" y="30" width="250" height="130" rx="12" fill="#0f1e36" stroke="#3182ce" stroke-width="2"/>
+      <text x="405" y="58" fill="#63b3ed" font-size="15" font-weight="bold" text-anchor="middle">PHASE B  (DWA core)</text>
+      <text x="405" y="78" fill="#90cdf4" font-size="11" text-anchor="middle">Sample 8×21 = 168 velocity pairs</text>
+      <text x="405" y="96" fill="#90cdf4" font-size="11" text-anchor="middle">Simulate unicycle 3s ahead each</text>
+      <text x="405" y="114" fill="#90cdf4" font-size="11" text-anchor="middle">Check inflated map collision</text>
+      <text x="405" y="132" fill="#90cdf4" font-size="11" text-anchor="middle">Score = 3×heading + 0.5×clear + 0.3×vel</text>
+      <text x="405" y="150" fill="#e2e8f0" font-size="10" text-anchor="middle">Execute best (v, ω)</text>
+
+      <!-- Arrow B→A loop back -->
+      <path d="M 405 30 Q 405 8 260 8 Q 115 8 115 28" stroke="#4a5568" stroke-width="1.5" fill="none" marker-end="url(#sm)" stroke-dasharray="4,3"/>
+      <text x="260" y="6" fill="#4a5568" font-size="8">big angle error again</text>
+
+      <!-- Arrow B→C -->
+      <line x1="530" y1="95" x2="588" y2="95" stroke="#718096" stroke-width="2" marker-end="url(#sm)"/>
+      <text x="534" y="88" fill="#fc8181" font-size="9">all blocked</text>
+
+      <!-- Phase C -->
+      <rect x="590" y="30" width="210" height="130" rx="12" fill="#2a0a0a" stroke="#fc8181" stroke-width="2"/>
+      <text x="695" y="58" fill="#fc8181" font-size="15" font-weight="bold" text-anchor="middle">PHASE C  (Recovery)</text>
+      <text x="695" y="78" fill="#fca5a5" font-size="11" text-anchor="middle">All trajectories blocked</text>
+      <text x="695" y="96" fill="#a0aec0" font-size="10" text-anchor="middle">Publish /replan_request</text>
+      <text x="695" y="112" fill="#a0aec0" font-size="10" text-anchor="middle">Rotate toward waypoint</text>
+      <text x="695" y="128" fill="#a0aec0" font-size="10" text-anchor="middle">5s cooldown before repeat</text>
+      <text x="695" y="148" fill="#fbd38d" font-size="10" text-anchor="middle">Global planner triggered</text>
+
+      <!-- Arrow C→A (new plan) -->
+      <line x1="800" y1="95" x2="860" y2="95" stroke="#48bb78" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <line x1="860" y1="95" x2="860" y2="185" stroke="#48bb78" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <line x1="860" y1="185" x2="115" y2="185" stroke="#48bb78" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <line x1="115" y1="185" x2="115" y2="162" stroke="#48bb78" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#sm)"/>
+      <text x="480" y="182" fill="#48bb78" font-size="9" text-anchor="middle">new plan received → restart from Phase A</text>
+    </svg>
+    </div>
+  </div>
+
+  <div class="card-row cols2">
+    <div class="card">
+      <h3>🎯 Trajectory Scoring — The Math</h3>
+      <p>Every one of the 168 trajectories gets a single score. The highest-scoring non-blocked trajectory wins:</p>
+      <pre><span class="cm"># 1. Heading — does endpoint face waypoint?</span>
+head_err = angle_between(endpoint_dir, waypoint_dir)
+h_sc = <span class="nu">1.0</span> - head_err / math.pi   <span class="cm"># 1.0=perfect</span>
+
+<span class="cm"># 2. Clearance — distance to nearest wall</span>
+c_sc = min(min_wall_dist / <span class="nu">0.6</span>, <span class="nu">1.0</span>)  <span class="cm"># 1.0=far</span>
+
+<span class="cm"># 3. Velocity — forward progress</span>
+v_sc = min(distance_travelled / max_dist, <span class="nu">1.0</span>)
+
+<span class="cm"># Final weighted score</span>
+score = <span class="nu">3.0</span>*h_sc + <span class="nu">0.5</span>*c_sc + <span class="nu">0.3</span>*v_sc</pre>
+      <div class="highlight-box info" style="margin-top:10px;">
+        <div class="icon">📊</div>
+        <div class="text">Heading dominates (weight 3.0). The robot goes the right direction first, avoids walls second (0.5), and prefers speed third (0.3). Near a wall on one side, clearance score biases the green arc away from it.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🛡 The Step-0 Skip — Why It Matters</h3>
+      <p>During trajectory simulation, the first step is skipped for collision checking:</p>
+      <pre><span class="kw">for</span> step <span class="kw">in</span> range(sim_steps):
+    px += v * cos(pth) * dt
+    py += v * sin(pth) * dt
+    pth = atan2(sin(pth+w*dt), cos(pth+w*dt))
+    <span class="hl">    <span class="kw">if</span> step == <span class="nu">0</span>: <span class="kw">continue</span>  <span class="cm"># skip step 0!</span></span>
+    <span class="kw">if</span> map_inf[row, col] == <span class="nu">100</span>:
+        <span class="kw">return</span> <span class="kw">None</span>  <span class="cm"># collision</span></pre>
+      <div class="highlight-box warn" style="margin-top:10px;">
+        <div class="icon">⚠️</div>
+        <div class="text">After C-space inflation, cells adjacent to the robot may be marked occupied (because the robot is next to a wall). Checking step 0 would mark every trajectory as blocked — the robot would freeze permanently. Skipping step 0 acknowledges that the robot's current position is valid.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SEQUENCE ═══════════ -->
+<section id="interaction">
+  <h2>🔄 Full Sequence — From Goal to Goal Reached</h2>
+
+  <div class="card">
+    <h3>10 Steps That Happen When You Click "2D Goal Pose"</h3>
+    <div class="step-grid s5">
+      <div class="step s-map">
+        <div class="step-num">1</div>
+        <div class="step-title">LiDAR Scans</div>
+        <div class="step-desc">360 beams fire. Bresenham traces each ray. Log-odds update. Walls appear black after 3 hits.</div>
+      </div>
+      <div class="step s-map">
+        <div class="step-num">2</div>
+        <div class="step-title">Map Published</div>
+        <div class="step-desc">/projected_map sent at 2Hz. global_planner and dwa_planner both subscribe and update their local copy.</div>
+      </div>
+      <div class="step s-rrt">
+        <div class="step-num">3</div>
+        <div class="step-title">Goal Received</div>
+        <div class="step-desc">/goal_pose arrives. global_planner inflates current map. Spawns RRT* in background thread.</div>
+      </div>
+      <div class="step s-rrt">
+        <div class="step-num">4</div>
+        <div class="step-title">RRT* Runs</div>
+        <div class="step-desc">5000 iterations. Tree grows. Rewiring finds optimal path. Waypoints extracted. /plan published.</div>
+      </div>
+      <div class="step s-dwa">
+        <div class="step-num">5</div>
+        <div class="step-title">DWA Gets Plan</div>
+        <div class="step-desc">/plan received. wp_idx=0. Phase A: rotate toward waypoint 1. Phase B when aligned.</div>
+      </div>
+    </div>
+    <div style="text-align:center;color:#4a5568;font-size:22px;margin:10px 0;">↓</div>
+    <div class="step-grid s5">
+      <div class="step s-dwa">
+        <div class="step-num">6</div>
+        <div class="step-title">DWA Drives</div>
+        <div class="step-desc">168 trajectories evaluated. Best scored (heading + clearance + speed). cmd_vel published. Robot moves.</div>
+      </div>
+      <div class="step s-dwa">
+        <div class="step-num">7</div>
+        <div class="step-title">Waypoint Passed</div>
+        <div class="step-desc">Within 0.25m of waypoint → wp_idx++. path_index also advances in global_planner via odom.</div>
+      </div>
+      <div class="step s-map">
+        <div class="step-num">8</div>
+        <div class="step-title">Map Updates</div>
+        <div class="step-desc">New walls discovered. Replanner checks next 2 waypoints every 2s. Blocked? → RRT* in background.</div>
+      </div>
+      <div class="step s-dwa">
+        <div class="step-num">9</div>
+        <div class="step-title">DWA Avoids</div>
+        <div class="step-desc">Wall appears mid-segment. Clearance score bends trajectory away. /replan_request if fully blocked.</div>
+      </div>
+      <div class="step s-rrt">
+        <div class="step-num">10</div>
+        <div class="step-title">Goal Reached</div>
+        <div class="step-desc">Within 0.25m of final waypoint. DWA state → REACHED. cmd_vel = (0,0). Done.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🐛 The Three Most Critical Bugs Fixed</h3>
+    <div class="card-row cols3">
+      <div style="background:#1e1010;border:1px solid #742a2a;border-radius:10px;padding:16px;">
+        <div style="color:#fc8181;font-weight:700;margin-bottom:8px;">🔴 Infinite Replan Loop</div>
+        <div style="color:#a0aec0;font-size:12px;margin-bottom:10px;line-height:1.6;"><strong>Cause:</strong> path_index never advanced → replanner kept checking already-traversed segments (now blocked by freshly-mapped walls) → triggered new plan → same loop forever.</div>
+        <div style="color:#68d391;font-size:12px;"><strong>Fix:</strong> Advance path_index in _odom_cb as robot passes each waypoint. Check only the next 2 waypoints ahead.</div>
+      </div>
+      <div style="background:#1e1010;border:1px solid #742a2a;border-radius:10px;padding:16px;">
+        <div style="color:#fc8181;font-weight:700;margin-bottom:8px;">🔴 Robot Freezes Every 2s</div>
+        <div style="color:#a0aec0;font-size:12px;margin-bottom:10px;line-height:1.6;"><strong>Cause:</strong> _stop() was called before the new plan was ready → DWA received an empty path → stopped moving → stood still for up to 2 seconds every replan cycle.</div>
+        <div style="color:#68d391;font-size:12px;"><strong>Fix:</strong> Never call _stop() when replanning. DWA keeps the old plan until the new plan arrives.</div>
+      </div>
+      <div style="background:#1e1010;border:1px solid #742a2a;border-radius:10px;padding:16px;">
+        <div style="color:#fc8181;font-weight:700;margin-bottom:8px;">🔴 DWA Never Moved Forward</div>
+        <div style="color:#a0aec0;font-size:12px;margin-bottom:10px;line-height:1.6;"><strong>Cause:</strong> Dynamic window v_hi = vx + a_v×dt ≈ 0.04 m/s from rest. At that speed, heading score was low and all trajectories scored near 0.</div>
+        <div style="color:#68d391;font-size:12px;"><strong>Fix:</strong> Always sample full range linspace(0, v_max). Ignore acceleration limit for velocity window.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ RVIZ ═══════════ -->
+<section id="rviz">
+  <h2>👁 RViz2 Visual Guide — What You See</h2>
+
+  <div class="card-row cols2">
+    <div class="card" style="background:#0d1117;">
+      <h3 style="color:#90cdf4;">Color Reference</h3>
+      <div class="rviz-item">
+        <div class="rviz-color" style="background:#111;border:1px solid #444;width:44px;height:18px;"></div>
+        <div><strong style="color:#e2e8f0;">Black cells</strong> — walls (log-odds &gt; 2.0, confirmed)</div>
+      </div>
+      <div class="rviz-item">
+        <div class="rviz-color" style="background:#ddd;width:44px;height:18px;"></div>
+        <div><strong style="color:#e2e8f0;">White cells</strong> — free space (log-odds &lt; −0.5)</div>
+      </div>
+      <div class="rviz-item">
+        <div class="rviz-color" style="background:#888;width:44px;height:18px;"></div>
+        <div><strong style="color:#e2e8f0;">Grey cells</strong> — unknown / not yet scanned</div>
+      </div>
+      <div class="rviz-item">
+        <div class="rviz-color" style="background:transparent;border-top:3px dashed #fc8181;width:44px;height:3px;"></div>
+        <div><strong style="color:#fc8181;">Red dashed line</strong> — global RRT* path (/plan)</div>
+      </div>
+      <div class="rviz-item">
+        <div class="rviz-color" style="background:#36cfc9;width:44px;height:4px;border-radius:2px;"></div>
+        <div><strong style="color:#36cfc9;">Cyan solid line</strong> — DWA local path (/local_path, 3s ahead)</div>
+      </div>
+      <div class="rviz-item">
+        <div class="rviz-color" style="background:#00c853;width:44px;height:6px;border-radius:2px;"></div>
+        <div><strong style="color:#00c853;">Thick green arc</strong> — best DWA trajectory this cycle</div>
+      </div>
+      <div class="rviz-item">
+        <div class="rviz-color" style="background:#5c6bc0;width:44px;height:3px;opacity:0.6;border-radius:1px;"></div>
+        <div><strong style="color:#818cf8;">Blue fan</strong> — all 168 valid DWA candidates</div>
+      </div>
+      <div class="rviz-item">
+        <div class="rviz-color" style="background:#4a5568;width:44px;height:2px;"></div>
+        <div><strong style="color:#718096;">Grey web</strong> — RRT* exploration tree (/rrt_tree)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🎬 Demo Script — What to Say While Pointing</h3>
+      <div style="margin-bottom:14px;padding:12px;background:#1a2e22;border-radius:8px;border-left:4px solid #48bb78;">
+        <div style="color:#9ae6b4;font-weight:700;margin-bottom:4px;">Point at the map appearing:</div>
+        <div style="color:#a0aec0;font-size:13px;">"Each cell stores a log-odds score. Three confirmed LiDAR hits raises it above 2.0 — the cell turns black. Free rays lower the score. The result is a clean probabilistic map built in real time."</div>
+      </div>
+      <div style="margin-bottom:14px;padding:12px;background:#2a1a08;border-radius:8px;border-left:4px solid #ed8936;">
+        <div style="color:#fbd38d;font-weight:700;margin-bottom:4px;">Point at the grey web + red path:</div>
+        <div style="color:#a0aec0;font-size:13px;">"The grey web is the RRT* exploration tree — 5000 random samples connected and rewired. The red line is extracted by tracing parent pointers from goal back to start through the lowest-cost path."</div>
+      </div>
+      <div style="padding:12px;background:#0f1e36;border-radius:8px;border-left:4px solid #63b3ed;">
+        <div style="color:#90cdf4;font-weight:700;margin-bottom:4px;">Point at the blue fan + green arc:</div>
+        <div style="color:#a0aec0;font-size:13px;">"The blue fan shows every trajectory DWA evaluated this cycle — 168 velocity combinations. The thick green arc is the one it chose: highest score for heading toward the waypoint while staying clear of walls. Near a corner, you'll see the arc curve away."</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ QUESTIONS ═══════════ -->
+<section id="questions">
+  <h2>🎓 Questions to Ask the Professor</h2>
+  <p style="margin-bottom:24px;">Grouped by topic, ordered from concept → implementation → next phase. Each question shows <em>depth of understanding</em>, not just "it works."</p>
+
+  <h3 style="color:#9ae6b4;margin:0 0 12px;">On Mapping</h3>
+  <div class="qa">
+    <div class="q">Q1: Our sticky-walls rule makes confirmed wall cells permanent — a false positive can never be corrected. What would be a better approach, and what real-time trade-offs does it introduce?</div>
+    <div class="a">Shows you know the correctability trade-off. Expected direction: bounded log-odds decay (e.g. multiply by 0.99 per timestep), or a dual-threshold with "strong wall" vs "soft wall" states. Trade-off: computational cost vs. ability to correct mapping errors from glass, mirrors, or moving objects.</div>
+  </div>
+  <div class="qa">
+    <div class="q">Q2: We use Bresenham for ray casting — it's a nearest-pixel approximation. What accuracy do we lose compared to a probabilistic beam model, and in what real-world scenario would the difference matter most?</div>
+    <div class="a">Bresenham gives binary free/occupied; a Gaussian range model accounts for sensor noise distribution. Matters most in narrow doorways (1–2 cells wide) where beam model would show graded probability vs. Bresenham's hard boundary.</div>
+  </div>
+
+  <h3 style="color:#fbd38d;margin:28px 0 12px;">On RRT*</h3>
+  <div class="qa">
+    <div class="q">Q3: RRT* is asymptotically optimal — path cost converges to the global optimum as iterations → infinity. We stop at 5000. How would you detect convergence early to stop wasting computation?</div>
+    <div class="a">Track the path cost delta between the last N goal-connecting events. If the cost improvement falls below a threshold (e.g. &lt;1cm), declare convergence. Or use Informed RRT* — once a path is found, only sample within the ellipse defined by the current path length.</div>
+  </div>
+  <div class="qa">
+    <div class="q">Q4: We inflate the map before planning but do not inflate unknown cells. The robot can plan through unexplored space. In what scenario is this assumption dangerous, and how would you handle it conservatively?</div>
+    <div class="a">Dangerous when unknown space is actually a narrow passage or dead-end. Conservative fix: treat unknown cells as occupied during planning (pessimistic map). More balanced: use a risk-weighted cost function that penalises paths through unknown cells but doesn't block them entirely.</div>
+  </div>
+
+  <h3 style="color:#90cdf4;margin:28px 0 12px;">On DWA</h3>
+  <div class="qa">
+    <div class="q">Q5: DWA simulates trajectories using a kinematic unicycle model. The real robot has motor inertia, wheel slip, and control latency. How does this model-reality gap affect safety guarantees?</div>
+    <div class="a">The actual robot may deviate from the simulated trajectory — especially at high angular velocities. The robot could end up closer to a wall than DWA predicted. Fix: add a safety margin to collision checks (check at robot_radius + δ), or use a full dynamic model with motor transfer functions.</div>
+  </div>
+  <div class="qa">
+    <div class="q">Q6: Our scoring weights (3.0, 0.5, 0.3) were tuned manually. Is there a principled learning approach? What data would you need?</div>
+    <div class="a">Inverse Optimal Control (IOC) / Inverse Reinforcement Learning. Data needed: demonstrations of an expert driver navigating through the same environment. The algorithm infers the weight vector that best explains the expert's trajectory choices. The challenge is defining the feature space to match the three criteria.</div>
+  </div>
+
+  <h3 style="color:#d6bcfa;margin:28px 0 12px;">On Phase 2 — Dubins Paths</h3>
+  <div class="qa">
+    <div class="q">Q7: Dubins paths assume constant speed and a minimum turning radius — car-like motion. Our robot is differential drive and can turn in place. When does using Dubins paths still make sense on a diff-drive robot?</div>
+    <div class="a">Dubins is useful when the robot needs to arrive at a goal with a specific heading (e.g. docking, parking). At cruising speed, the minimum turning radius constraint is real even for diff-drive (wheel slip, stability). Breaks down in tight spaces where in-place rotation is the only option. Solution: use Reeds-Shepp curves which allow reverse motion and zero-radius turns.</div>
+  </div>
+
+  <h3 style="color:#d6bcfa;margin:28px 0 12px;">On Phase 3 — Frontier Exploration</h3>
+  <div class="qa">
+    <div class="q">Q8: Frontier exploration — "nearest frontier" is the simplest strategy. What is the information-theoretic argument for choosing frontiers by expected map entropy reduction instead?</div>
+    <div class="a">Shannon entropy of the occupancy grid = Σ −p log p over all cells. Nearest frontier is greedy and may lead to a dead-end that only opens a small new area. An entropy-maximising frontier opens the most new information per unit travel distance. In practice, cost-utility functions like I(F) = info_gain(F) / travel_cost(F) are used — similar to mutual information in active SLAM.</div>
+  </div>
+  <div class="qa">
+    <div class="q">Q9: In the two-level hierarchy (RRT* global + DWA local), what are the fundamental limitations compared to a unified trajectory optimiser like TEB (Timed Elastic Band)?</div>
+    <div class="a">Key limitation: the global plan is computed on a static map snapshot and passed down as fixed waypoints. DWA must correct this locally but can't change the global topology. TEB optimises the entire trajectory simultaneously — it can deform the path globally if a new obstacle appears mid-route. Trade-off: TEB is much more computationally expensive and harder to tune. RRT*+DWA is simpler, more predictable, and faster to debug.</div>
+  </div>
+
+  <div style="text-align:center;margin-top:50px;padding:24px;background:#1a1d2e;border-radius:12px;border:1px solid #2d3748;">
+    <div style="color:#4a5568;font-size:13px;">handson_planning · Phase 1 · ROS2 Jazzy · TurtleBot4 · Stonefish Simulator</div>
+    <div style="color:#2d3748;font-size:11px;margin-top:4px;">mapping_node + global_planner + dwa_planner</div>
+  </div>
+</section>
+
+</body>
+</html>
